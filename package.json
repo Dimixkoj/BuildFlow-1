@@ -6,9 +6,9 @@
   "main": "desktop/main.cjs",
   "scripts": {
     "start": "npm run build:web && cross-env APP_VARIANT=buildflow electron .",
-    "start:conflow": "npm run build:web && cross-env APP_VARIANT=buildflow electron .",
+    "start:conflow": "npm run build:web && cross-env APP_VARIANT=conflow electron .",
     "start:buildflow": "npm run build:web && cross-env APP_VARIANT=buildflow electron .",
-    "dist:conflow": "npm run build:web && cross-env APP_VARIANT=buildflow electron-builder --config electron-builder.config.cjs --win nsis --x64 --publish never",
+    "dist:conflow": "npm run build:web && cross-env APP_VARIANT=conflow electron-builder --config electron-builder.config.cjs --win nsis --x64 --publish never",
     "dist:buildflow": "npm run build:web && cross-env APP_VARIANT=buildflow electron-builder --config electron-builder.config.cjs --win nsis --x64 --publish never",
     "dist:both": "npm run dist:conflow && npm run dist:buildflow",
     "build:web": "vite build",
