@@ -169,11 +169,7 @@ if (authActions && !$('cloud-resend-confirm')) {
     if (!email) return status('Enter your company email address first.');
     resendButton.disabled = true;
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email,
-        options: { emailRedirectTo: window.location.origin }
-      });
+      const { error } = await supabase.auth.resend({ type: 'signup', email });
       if (error) {
         const message = String(error.message || '');
         if (error.status === 429 || /rate limit|too many requests/i.test(message)) {
