@@ -139,7 +139,13 @@ $('cloud-sign-in')?.addEventListener('click', async () => {
   button.disabled = true;
   try {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) {
+      if (error.code === 'email_not_confirmed' || /email not confirmed/i.test(error.message || '')) {
+        status('This account is awaiting email confirmation. Use Resend confirmation after the email service is configured.');
+        return;
+      }
+      throw error;
+    }
     await refreshAuth();
     if (activeUser) showPanel(false);
   } catch (error) {
@@ -148,6 +154,43 @@ $('cloud-sign-in')?.addEventListener('click', async () => {
     button.disabled = false;
   }
 });
+
+
+const authActions = document.querySelector('.auth-actions');
+if (authActions && !$('cloud-resend-confirm')) {
+  const resendButton = document.createElement('button');
+  resendButton.className = 'secondary';
+  resendButton.id = 'cloud-resend-confirm';
+  resendButton.type = 'button';
+  resendButton.textContent = 'Resend confirmation';
+  authActions.insertBefore(resendButton, $('cloud-sync'));
+  resendButton.addEventListener('click', async () => {
+    const email = $('cloud-email').value.trim();
+    if (!email) return status('Enter your company email address first.');
+    resendButton.disabled = true;
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: { emailRedirectTo: window.location.origin }
+      });
+      if (error) {
+        const message = String(error.message || '');
+        if (error.status === 429 || /rate limit|too many requests/i.test(message)) {
+          status('Supabase email limit reached. Do not retry yet. Configure custom SMTP, then request one fresh confirmation email.');
+        } else {
+          status('Confirmation email could not be requested: ' + message);
+        }
+        return;
+      }
+      status('Confirmation email requested. Check your inbox and spam folder. Use only the newest confirmation link.');
+    } catch (error) {
+      status('Confirmation email could not be requested: ' + error.message);
+    } finally {
+      resendButton.disabled = false;
+    }
+  });
+}
 
 $('cloud-sign-up')?.addEventListener('click', async () => {
   const fullName = $('profile-full-name').value.trim();
@@ -158,6 +201,7 @@ $('cloud-sign-up')?.addEventListener('click', async () => {
   if (!fullName || fullName.length < 2) return status('Enter your full name before creating an account.');
   if (!/^[A-Za-z0-9_-]{3,32}$/.test(loginId)) return status('Login ID must be 3–32 letters, numbers, hyphens or underscores.');
   if (!email || password.length < 8) return status('Enter your email and a password of at least 8 characters.');
+  if (email.toLowerCase() === 'dimixcom@hotmail.com') return status('The company owner account already exists. Do not create it again. Sign in, or use Resend confirmation after SMTP is configured.');
   const button = $('cloud-sign-up');
   button.disabled = true;
   try {
@@ -174,7 +218,10 @@ $('cloud-sign-up')?.addEventListener('click', async () => {
       showPanel(false);
     }
   } catch (error) {
-    status('Account creation failed: ' + error.message);
+    const message = String(error.message || 'Unknown error');
+    status(error.status === 429 || /email rate limit|over_email_send_rate_limit/i.test(message)
+      ? 'Supabase email rate limit reached. Stop creating accounts for now. Configure custom SMTP, then use Resend confirmation once.'
+      : 'Account creation failed: ' + message);
   } finally {
     button.disabled = false;
   }
