@@ -49,6 +49,7 @@ function intersect(p,r,q,s,allowOutside=false){const d=cross(r,s);if(Math.abs(d)
 export function trimExtendElement(model,id,referenceId,mode){
  const e=model.elements.find(x=>x.id===id),ref=model.elements.find(x=>x.id===referenceId);if(!e||!ref||e.id===ref.id)return{ok:false,reason:'Select a target and a different boundary object'};
  if(!['trim','extend'].includes(mode))return{ok:false,reason:'Unknown operation'};
+ if(!['wall','beam'].includes(e.type))return{ok:false,reason:'Trim and extend currently operate on wall and beam centre-lines'};
  const u=unit(e),v={x:-u.y,y:u.x},start={x:e.x-u.x*e.length/2,y:e.y-u.y*e.length/2},end={x:e.x+u.x*e.length/2,y:e.y+u.y*e.length/2};
  const ru=unit(ref),rv={x:-ru.y,y:ru.x},corners=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([a,b])=>({x:ref.x+ru.x*a*ref.length/2+rv.x*b*ref.width/2,y:ref.y+ru.y*a*ref.length/2+rv.y*b*ref.width/2}));
  const hits=[];for(let i=0;i<4;i++){const p=corners[i],q=corners[(i+1)%4],r={x:q.x-p.x,y:q.y-p.y},seg={x:end.x-start.x,y:end.y-start.y},h=intersect(start,seg,p,r);if(h)hits.push(h)}
