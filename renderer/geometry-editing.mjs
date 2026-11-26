@@ -70,3 +70,10 @@ export function trimExtendElement(model,id,referenceId,mode){
  }
  return{ok:true,oldLength:old,newLength:e.length,referenceId:ref.id};
 }
+
+export function apply3DTransform(element,transform,baseline=element){
+ element.x=transform.position.x;element.z=transform.position.y;element.y=transform.position.z;
+ element.rotation=-transform.rotation.y*180/Math.PI;
+ element.length=baseline.length*transform.scale.x;element.height=baseline.height*transform.scale.y;element.width=baseline.width*transform.scale.z;
+ return element;
+}
