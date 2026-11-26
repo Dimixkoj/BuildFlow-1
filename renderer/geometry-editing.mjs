@@ -52,7 +52,7 @@ export function trimExtendElement(model,id,referenceId,mode){
  if(!['wall','beam'].includes(e.type))return{ok:false,reason:'Trim and extend currently operate on wall and beam centre-lines'};
  const u=unit(e),v={x:-u.y,y:u.x},start={x:e.x-u.x*e.length/2,y:e.y-u.y*e.length/2},end={x:e.x+u.x*e.length/2,y:e.y+u.y*e.length/2};
  const ru=unit(ref),rv={x:-ru.y,y:ru.x},corners=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([a,b])=>({x:ref.x+ru.x*a*ref.length/2+rv.x*b*ref.width/2,y:ref.y+ru.y*a*ref.length/2+rv.y*b*ref.width/2}));
- const hits=[];for(let i=0;i<4;i++){const p=corners[i],q=corners[(i+1)%4],r={x:q.x-p.x,y:q.y-p.y},seg={x:end.x-start.x,y:end.y-start.y},h=intersect(start,seg,p,r);if(h)hits.push(h)}
+ const hits=[];for(let i=0;i<4;i++){const p=corners[i],q=corners[(i+1)%4],r={x:q.x-p.x,y:q.y-p.y},seg={x:end.x-start.x,y:end.y-start.y},h=intersect(start,seg,p,r,mode==='extend');if(h)hits.push(h)}
  const unique=hits.filter((h,i)=>hits.findIndex(x=>Math.hypot(x.x-h.x,x.y-h.y)<1e-5)===i).sort((a,b)=>a.t-b.t);
  if(!unique.length)return{ok:false,reason:'No intersection with the selected boundary'};
  const hit=mode==='trim'?unique.reduce((best,h)=>Math.abs(h.t-.5)<Math.abs(best.t-.5)?h:best):unique.reduce((best,h)=>Math.abs(h.t)<Math.abs(best.t)?h:best,unique[0]);
