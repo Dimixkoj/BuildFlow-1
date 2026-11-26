@@ -77,3 +77,14 @@ export function apply3DTransform(element,transform,baseline=element){
  element.length=baseline.length*transform.scale.x;element.height=baseline.height*transform.scale.y;element.width=baseline.width*transform.scale.z;
  return element;
 }
+
+export function constrainHostedOpening(model,id){
+ const o=model.elements.find(e=>e.id===id&&['door','window'].includes(e.type));if(!o||!o.hostId)return{ok:true,hosted:false};
+ const w=model.elements.find(e=>e.id===o.hostId&&e.type==='wall');if(!w)return{ok:false,reason:'Host wall no longer exists'};
+ if(o.length>w.length||o.height>w.height)return{ok:false,reason:'Opening is larger than its host wall'};
+ const angle=rad(w.rotation||0),u={x:Math.cos(angle),y:Math.sin(angle)},dx=o.x-w.x,dy=o.y-w.y;
+ const along=dx*u.x+dy*u.y,clamped=Math.max(-w.length/2+o.length/2,Math.min(w.length/2-o.length/2,along));
+ o.x=w.x+u.x*clamped;o.y=w.y+u.y*clamped;o.rotation=w.rotation||0;
+ o.z=Math.max(w.z,Math.min(o.z,w.z+w.height-o.height));
+ return{ok:true,hosted:true,hostId:w.id};
+}
