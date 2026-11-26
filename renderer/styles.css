@@ -164,3 +164,22 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .cad-status{min-height:28px;align-items:center}
 @media(max-width:900px){.auth-grid{grid-template-columns:1fr}.auth-intro{min-height:160px}.header-tools{justify-content:flex-start}.account-profile{min-width:0;flex:1}}
 @media(max-width:600px){.auth-panel{padding:14px}.auth-actions{display:grid;grid-template-columns:1fr 1fr}.auth-actions button{min-width:0}.account-profile{width:100%}.header-tools{width:100%}.header-tools>#cloud-open{flex:1}.profile-copy b,.profile-copy small{max-width:180px}}
+
+
+/* Hybrid BIM + 3D Studio primary workspace */
+.workspace-launcher{margin:18px 0 20px;padding:20px;border:1px solid #344d64;border-radius:16px;background:linear-gradient(135deg,#15283b 0%,#172c40 58%,#1b3b4a 100%);box-shadow:0 16px 36px #050b1455}
+.workspace-launcher-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.workspace-launcher-head h3{margin:3px 0 5px;font-size:20px;color:#f0f6fb}
+.workspace-launcher-head p:not(.eyebrow){margin:0;color:#a9bdcf;font-size:11px;line-height:1.55;max-width:620px}
+.shared-model-pill{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;padding:8px 11px;border:1px solid #47796f;border-radius:999px;background:#143a3a;color:#b9f1df;font-size:10px;font-weight:750}
+.shared-model-pill i{width:7px;height:7px;border-radius:50%;background:#76dfbb;box-shadow:0 0 12px #76dfbb}
+.workspace-launcher-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.workspace-launch-card{display:grid;grid-template-columns:46px minmax(0,1fr);gap:13px;align-items:start;padding:17px;border:1px solid #3a5269;border-radius:12px;background:linear-gradient(145deg,#1a3046,#142438);min-width:0}
+.workspace-launch-card.visual{background:linear-gradient(145deg,#1a3545,#18283b);border-color:#426579}
+.workspace-card-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:#234b5a;color:#9de6d8;font-size:24px;font-weight:800}
+.workspace-card-kicker{font-size:9px;letter-spacing:1.1px;color:#8eacbf;font-weight:800}
+.workspace-launch-card h4{font-size:16px;margin:5px 0 6px;color:#f2f7fb}
+.workspace-launch-card p{font-size:11px;line-height:1.55;color:#aabed0;min-height:52px;margin:0 0 13px}
+.workspace-launch-card button{min-height:44px}
+.workspace-sync-note{font-size:10px;line-height:1.5;color:#8ea5bb;margin:14px 2px 0}
+@media(max-width:760px){.workspace-launcher{padding:15px}.workspace-launcher-head{flex-direction:column}.workspace-launcher-grid{grid-template-columns:1fr}.workspace-launch-card p{min-height:0}}
