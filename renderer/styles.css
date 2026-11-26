@@ -119,3 +119,48 @@
 @media(max-width:900px){.field-grid{grid-template-columns:1fr}.field-form-wide{grid-template-columns:1fr}}
 
 .header-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}.header-tools .status-pill{font-size:11px}
+
+
+/* BuildFlow 1 professional identity, accessible controls and CAD workspace */
+.header-tools{gap:10px}
+.account-profile{display:flex;align-items:center;gap:9px;padding:6px 9px;border:1px solid #39536b;border-radius:12px;background:linear-gradient(135deg,#182b40,#203a50);min-width:210px;box-shadow:0 8px 22px #050b1466}
+.profile-avatar{width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#7ad8c7,#2d6677);background-size:cover;background-position:center;color:#09202b;font-weight:900;font-size:14px;border:2px solid #9ce3d7}
+.profile-avatar.has-photo{color:transparent}
+.profile-copy{display:grid;gap:3px;min-width:0}
+.profile-copy b{font-size:11px;color:#f0f6fb;max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-copy small{font-size:9px;color:#9eb4c9;max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-signout{min-height:36px!important;padding:7px 9px!important;font-size:10px!important}
+.auth-panel{padding:22px;margin:0 0 18px;border:1px solid #3d6177;background:linear-gradient(130deg,#17283b,#142236 62%,#1c3a4b);box-shadow:0 18px 50px #050b1466}
+.auth-grid{display:grid;grid-template-columns:minmax(220px,.75fr) minmax(300px,1.25fr);gap:24px;align-items:stretch}
+.auth-intro{padding:18px;border:1px solid #39576e;border-radius:14px;background:radial-gradient(circle at 20% 10%,#315b6b,#14263a 65%);display:flex;flex-direction:column;justify-content:center}
+.auth-emblem{width:58px;height:58px;display:grid;place-items:center;border-radius:17px;background:linear-gradient(145deg,#a5e8dc,#43899a);color:#102a37;font-weight:950;font-size:20px;box-shadow:0 12px 26px #06111d88}
+.auth-intro h3{font-size:20px;margin:18px 0 7px;color:#f0f6fa}
+.auth-intro p,.auth-security{font-size:11px;line-height:1.6;color:#b6c9d8}
+.auth-security{margin-top:14px;padding:10px;border-left:2px solid #70cdbf;background:#0b1a2a88}
+.auth-fields{min-width:0}
+.auth-fields .field-form{gap:10px}
+.auth-fields .field-form label{margin:0;display:grid;gap:6px}
+.auth-fields input,.auth-fields select{min-height:44px;background:#0b1726;border:1px solid #3b5871;border-radius:9px;color:#f2f6fa;padding:10px 12px}
+.auth-fields input[type=file]{font-size:11px}
+.optional-note{font-size:9px;color:#86a4bb;font-weight:400}
+.auth-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+.auth-actions button{min-height:46px;min-width:125px}
+.auth-panel .panel-head{align-items:flex-start;margin-bottom:15px}
+.auth-panel .panel-head h3{margin:2px 0 5px;font-size:20px}
+.auth-panel .panel-head small{font-size:11px;color:#a9c0d1}
+button,.nav,.tool,.view-tab,.tree-item,.tool-subtabs button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button{min-height:42px}
+.nav{min-height:44px}
+.tool,.view-tab,.tool-subtabs button{min-height:40px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #8ce3d4;outline-offset:2px}
+.cad-topbar,.cad-commandbar,.cad-layout,.studio-heading,.studio-layout{isolation:isolate}
+.cad-workarea{box-shadow:inset 0 1px 0 #ffffff08,0 12px 34px #050b1455}
+.drawing-board{box-shadow:inset 0 0 0 1px #7892aa22,0 16px 36px #050b1466}
+.view-tabs{background:linear-gradient(100deg,#0c1725,#182b40)}
+.view-tab.active{box-shadow:0 0 0 1px #84dccc66,0 4px 15px #2b877b44}
+#cad-viewport{touch-action:pan-x pan-y;cursor:grab}
+#cad-viewport:active{cursor:grabbing}
+.cad-panel{box-shadow:inset 0 1px 0 #ffffff08}
+.cad-status{min-height:28px;align-items:center}
+@media(max-width:900px){.auth-grid{grid-template-columns:1fr}.auth-intro{min-height:160px}.header-tools{justify-content:flex-start}.account-profile{min-width:0;flex:1}}
+@media(max-width:600px){.auth-panel{padding:14px}.auth-actions{display:grid;grid-template-columns:1fr 1fr}.auth-actions button{min-width:0}.account-profile{width:100%}.header-tools{width:100%}.header-tools>#cloud-open{flex:1}.profile-copy b,.profile-copy small{max-width:180px}}
