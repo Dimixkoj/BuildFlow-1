@@ -45,7 +45,7 @@ export function offsetElement(model,id,distance,side=1){
  const u=unit(e),n={x:-u.y*side,y:u.x*side},copy=structuredClone(e);copy.id=uid();copy.x+=n.x*Math.abs(distance);copy.y+=n.y*Math.abs(distance);copy.label=(e.label||e.type)+' · offset';model.elements.push(copy);return{ok:true,id:copy.id};
 }
 function cross(a,b){return a.x*b.y-a.y*b.x}
-function intersect(p,r,q,s){const d=cross(r,s);if(Math.abs(d)<EPS)return null;const t=cross({x:q.x-p.x,y:q.y-p.y},s)/d,u=cross({x:q.x-p.x,y:q.y-p.y},r)/d;return t>=-EPS&&t<=1+EPS&&u>=-EPS&&u<=1+EPS?{x:p.x+t*r.x,y:p.y+t*r.y,t}:null}
+function intersect(p,r,q,s,allowOutside=false){const d=cross(r,s);if(Math.abs(d)<EPS)return null;const t=cross({x:q.x-p.x,y:q.y-p.y},s)/d,u=cross({x:q.x-p.x,y:q.y-p.y},r)/d;return (allowOutside||t>=-EPS&&t<=1+EPS)&&u>=-EPS&&u<=1+EPS?{x:p.x+t*r.x,y:p.y+t*r.y,t}:null}
 export function trimExtendElement(model,id,referenceId,mode){
  const e=model.elements.find(x=>x.id===id),ref=model.elements.find(x=>x.id===referenceId);if(!e||!ref||e.id===ref.id)return{ok:false,reason:'Select a target and a different boundary object'};
  if(!['trim','extend'].includes(mode))return{ok:false,reason:'Unknown operation'};
