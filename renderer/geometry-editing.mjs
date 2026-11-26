@@ -89,3 +89,18 @@ export function constrainHostedOpening(model,id){
  o.z=Math.max(w.z,Math.min(o.z,w.z+w.height-o.height));
  return{ok:true,hosted:true,hostId:w.id};
 }
+
+export function syncHostedOpeningsAfterWallTransform(model,wallId,baselineModel){
+ const wall=model.elements.find(e=>e.id===wallId&&e.type==='wall'),oldWall=baselineModel?.elements?.find(e=>e.id===wallId&&e.type==='wall');
+ if(!wall||!oldWall)return{ok:false,reason:'Current or baseline host wall is missing'};
+ const a0=rad(oldWall.rotation||0),a1=rad(wall.rotation||0),u0={x:Math.cos(a0),y:Math.sin(a0)},u1={x:Math.cos(a1),y:Math.sin(a1)},updated=[];
+ for(const o of model.elements.filter(e=>['door','window'].includes(e.type)&&e.hostId===wallId)){
+  const old=baselineModel.elements.find(e=>e.id===o.id);if(!old)continue;
+  if(o.length>wall.length||o.height>wall.height)return{ok:false,reason:'Wall transform makes a hosted opening too large'};
+  const dx=old.x-oldWall.x,dy=old.y-oldWall.y,local=(dx*u0.x+dy*u0.y)*(wall.length/oldWall.length);
+  const along=Math.max(-wall.length/2+o.length/2,Math.min(wall.length/2-o.length/2,local));
+  o.x=wall.x+u1.x*along;o.y=wall.y+u1.y*along;o.z=wall.z+(old.z-oldWall.z);o.rotation=wall.rotation||0;
+  o.z=Math.max(wall.z,Math.min(o.z,wall.z+wall.height-o.height));updated.push(o.id);
+ }
+ return{ok:true,updated};
+}
