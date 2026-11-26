@@ -6,20 +6,84 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
   global: { headers: { 'x-client-info': 'dimixkoj-buildflow1' } }
 });
-
 const $ = (id) => document.getElementById(id);
 const panel = $('cloud-auth-panel');
+const appKey = window.APP_VARIANT === 'buildflow' ? 'buildflow1' : 'conflow1';
 let activeWorkspace = null;
 let activeUser = null;
-const appKey = window.APP_VARIANT === 'buildflow' ? 'buildflow1' : 'conflow1';
 
 function status(message, connected = false) {
-  if ($('cloud-status')) $('cloud-status').textContent = connected ? 'Cloud connected' : 'Cloud not connected';
-  if ($('cloud-account-status')) $('cloud-account-status').textContent = message;
+  const badge = $('cloud-status');
+  if (badge) badge.textContent = connected ? 'Cloud connected' : 'Cloud not connected';
+  const note = $('cloud-account-status');
+  if (note) note.textContent = message;
 }
 function showPanel(show) { panel?.classList.toggle('hidden', !show); }
+function localPhoto() {
+  try { return localStorage.getItem('buildflow-profile-photo') || ''; } catch { return ''; }
+}
+function renderProfile(user) {
+  const card = $('account-profile');
+  if (!card) return;
+  if (!user) {
+    card.classList.add('hidden');
+    return;
+  }
+  const meta = user.user_metadata || {};
+  const fullName = meta.full_name || user.email?.split('@')[0] || 'Workspace user';
+  const loginId = meta.login_id || user.id.slice(0, 8).toUpperCase();
+  const role = meta.display_role || 'Workspace member';
+  $('profile-name').textContent = fullName;
+  $('profile-login-id').textContent = loginId;
+  $('profile-role').textContent = role;
+  const avatar = $('profile-avatar');
+  const photo = localPhoto();
+  if (avatar) {
+    avatar.textContent = photo ? '' : fullName.trim().split(/\s+/).slice(0, 2).map(x => x[0]).join('').toUpperCase();
+    avatar.style.backgroundImage = photo ? 'url("' + photo + '")' : '';
+    avatar.classList.toggle('has-photo', !!photo);
+  }
+  card.classList.remove('hidden');
+}
 $('cloud-open')?.addEventListener('click', () => showPanel(true));
 $('cloud-close')?.addEventListener('click', () => showPanel(false));
+
+$('profile-photo-input')?.addEventListener('change', async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+    status('Choose a PNG, JPEG or WebP profile photograph.');
+    event.target.value = '';
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    status('Profile photograph must be 5 MB or smaller.');
+    event.target.value = '';
+    return;
+  }
+  try {
+    const source = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+    const img = new Image();
+    img.src = source;
+    await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    const side = Math.min(img.width, img.height);
+    ctx.drawImage(img, (img.width-side)/2, (img.height-side)/2, side, side, 0, 0, 256, 256);
+    const data = canvas.toDataURL('image/webp', 0.82);
+    localStorage.setItem('buildflow-profile-photo', data);
+    if (activeUser) renderProfile(activeUser);
+    status('Profile photograph saved on this device.');
+  } catch (error) {
+    status('Could not save profile photograph: ' + error.message);
+  }
+});
 
 async function resolveWorkspace(user) {
   const { data: ownerWorkspace, error: ownerError } = await supabase
@@ -38,56 +102,106 @@ async function resolveWorkspace(user) {
 }
 
 async function refreshAuth() {
-  const { data: { session } } = await supabase.auth.getSession();
-  activeUser = session?.user || null;
-  activeWorkspace = null;
-  if (!activeUser) {
-    status('Not signed in. Sign in with your company account.');
-    $('cloud-sync').disabled = true; $('cloud-sign-out').disabled = true;
-    return;
-  }
   try {
-    activeWorkspace = await resolveWorkspace(activeUser);
-    if (!activeWorkspace) {
-      status('Signed in, but no active membership or matching owner workspace exists for this app. Ask the company owner to grant access.');
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    activeUser = session?.user || null;
+    activeWorkspace = null;
+    renderProfile(activeUser);
+    if (!activeUser) {
+      status('Not signed in. Sign in with your company email.');
       $('cloud-sync').disabled = true;
-    } else {
-      status('Signed in as ' + activeUser.email + ' · ' + activeWorkspace.company_name + ' · ' + appKey, true);
-      $('cloud-sync').disabled = false;
+      return;
     }
-    $('cloud-sign-out').disabled = false;
+    try {
+      activeWorkspace = await resolveWorkspace(activeUser);
+      if (!activeWorkspace) {
+        status('Signed in, but this account has no active company workspace access for ' + appKey + '. Ask the company owner to assign access.');
+        $('cloud-sync').disabled = true;
+      } else {
+        status('Signed in as ' + (activeUser.user_metadata?.full_name || activeUser.email) + ' · ' + activeWorkspace.company_name + ' · ' + appKey, true);
+        $('cloud-sync').disabled = false;
+      }
+    } catch (error) {
+      status('Signed in; workspace access check failed: ' + error.message);
+      $('cloud-sync').disabled = true;
+    }
   } catch (error) {
-    status('Account signed in; workspace access check failed: ' + error.message);
-    $('cloud-sync').disabled = true;
+    status('Authentication could not be checked: ' + error.message);
   }
 }
 
 $('cloud-sign-in')?.addEventListener('click', async () => {
-  const email = $('cloud-email').value.trim(); const password = $('cloud-password').value;
-  if (!email || !password) return status('Enter your email and password.');
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return status('Sign-in failed: ' + error.message);
-  await refreshAuth();
-});
-$('cloud-sign-up')?.addEventListener('click', async () => {
-  const email = $('cloud-email').value.trim(); const password = $('cloud-password').value;
-  if (!email || password.length < 8) return status('Enter an email and a password of at least 8 characters.');
-  const { data, error } = await supabase.auth.signUp({ email, password });
-  if (error) return status('Account creation failed: ' + error.message);
-  if (!data.session) status('Account created. Check your email to confirm the account, then sign in.');
-  else await refreshAuth();
-});
-$('cloud-sign-out')?.addEventListener('click', async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) return status('Sign-out failed: ' + error.message);
-  await refreshAuth();
-});
-$('cloud-sync')?.addEventListener('click', async () => {
-  if (!activeUser || !activeWorkspace) return status('Sign in and confirm app membership before syncing.');
+  const email = $('cloud-email').value.trim();
+  const password = $('cloud-password').value;
+  if (!email || !password) return status('Enter your email address and password.');
+  const button = $('cloud-sign-in');
+  button.disabled = true;
   try {
-    $('cloud-sync').disabled = true;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    await refreshAuth();
+    if (activeUser) showPanel(false);
+  } catch (error) {
+    status('Sign-in failed: ' + error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$('cloud-sign-up')?.addEventListener('click', async () => {
+  const fullName = $('profile-full-name').value.trim();
+  const loginId = $('profile-login-input').value.trim();
+  const role = $('profile-role-input').value;
+  const email = $('cloud-email').value.trim();
+  const password = $('cloud-password').value;
+  if (!fullName || fullName.length < 2) return status('Enter your full name before creating an account.');
+  if (!/^[A-Za-z0-9_-]{3,32}$/.test(loginId)) return status('Login ID must be 3–32 letters, numbers, hyphens or underscores.');
+  if (!email || password.length < 8) return status('Enter your email and a password of at least 8 characters.');
+  const button = $('cloud-sign-up');
+  button.disabled = true;
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { full_name: fullName, login_id: loginId, display_role: role } }
+    });
+    if (error) throw error;
+    if (!data.session) {
+      status('Account request created. Check your email to confirm it, then sign in. Company workspace access may still need owner approval.');
+    } else {
+      await refreshAuth();
+      status(activeWorkspace ? 'Account created and company workspace connected.' : 'Account created. Your company owner must assign BuildFlow workspace access.', !!activeWorkspace);
+      showPanel(false);
+    }
+  } catch (error) {
+    status('Account creation failed: ' + error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+async function signOut() {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    activeUser = null;
+    activeWorkspace = null;
+    renderProfile(null);
+    await refreshAuth();
+    showPanel(false);
+  } catch (error) {
+    status('Sign-out failed: ' + error.message);
+  }
+}
+$('profile-signout')?.addEventListener('click', signOut);
+
+$('cloud-sync')?.addEventListener('click', async () => {
+  if (!activeUser || !activeWorkspace) return status('Sign in and confirm company membership before syncing.');
+  const button = $('cloud-sync');
+  button.disabled = true;
+  try {
     const localProjects = await window.desktop.listProjects();
-    const rows = localProjects.map((project) => ({
+    const rows = localProjects.map(project => ({
       id: project.id, company_id: activeWorkspace.id, app_key: appKey,
       name: project.title, site_address: null, timezone: 'Africa/Lagos',
       status: ['active','paused','completed','archived'].includes(project.status) ? project.status : 'active',
@@ -97,12 +211,13 @@ $('cloud-sync')?.addEventListener('click', async () => {
       const { error } = await supabase.from('projects').upsert(rows, { onConflict: 'id' });
       if (error) throw error;
     }
-    status('Uploaded ' + rows.length + ' local project record(s) to ' + appKey + '. Other record types remain local for now.', true);
+    status('Uploaded ' + rows.length + ' local project record(s). Full two-way sync is not yet enabled.', true);
   } catch (error) {
     status('Project sync failed: ' + error.message);
   } finally {
-    $('cloud-sync').disabled = !activeWorkspace;
+    button.disabled = !activeWorkspace;
   }
 });
-supabase.auth.onAuthStateChange((_event, _session) => { queueMicrotask(() => refreshAuth()); });
+
+supabase.auth.onAuthStateChange(() => { queueMicrotask(() => refreshAuth()); });
 refreshAuth();
