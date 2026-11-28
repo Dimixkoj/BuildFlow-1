@@ -50,3 +50,11 @@ export function levelWallGraph(model){
 export function wallJoinCandidates(wall,walls,model){
  return(walls||[]).filter(other=>other.id===wall.id||wallsShareVerticalExtent(wall,other,model));
 }
+
+export function elementLevelId(element,model){
+ if(element?.type==='wall')return wallVerticalSpan(element,model).baseLevelId;
+ if(element?.hostId){const host=(model?.elements||[]).find(e=>e.id===element.hostId&&e.type==='wall');if(host)return wallVerticalSpan(host,model).baseLevelId}
+ if(element?.levelId)return element.levelId;
+ const levels=normaliseBuildingLevels(model);if(!levels.length)return null;const z=Number(element?.z)||0;
+ return levels.reduce((best,l)=>Math.abs(l.elevation-z)<Math.abs(best.elevation-z)?l:best,levels[0]).id;
+}
