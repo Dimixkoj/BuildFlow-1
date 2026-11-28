@@ -31,9 +31,9 @@ function planRender(){const g=$('cad-elements');g.replaceChildren();const ns='ht
   const x=450+(e.x-5)*48,y=285+(e.y-5)*48,w=Math.max(4,e.length*48),h=Math.max(5,e.width*48),angle=-(e.rotation||0);
   if(e.type==='door'||e.type==='window'){el('line',{x1:x-w/2,y1:y,x2:x+w/2,y2:y,transform:'rotate('+angle+' '+x+' '+y+')',stroke:e.type==='door'?'#d5a85f':'#5eb9e7','stroke-width':5,'stroke-linecap':'round'});el('text',{x:x,y:y-9,fill:'#dce9f5','font-size':10,'text-anchor':'middle'},e.type==='door'?'D':'W');continue}
   if(e.type==='wall'){
-   const points=wallFootprint(e,design.elements).map(p=>(450+(p.x-5)*48)+','+(285+(p.y-5)*48)).join(' ');
+   const points=wallFootprint(e,design.elements,design.wallTopology?.overrides||[]).map(p=>(450+(p.x-5)*48)+','+(285+(p.y-5)*48)).join(' ');
    el('polygon',{points,fill:'#68c8ba','fill-opacity':'.68',stroke:e.id===selected?'#ffd16b':'#d6e7f3','stroke-width':e.id===selected?3:1.5});
-   const labelX=x,labelY=y-12;el('text',{x:labelX,y:labelY,fill:'#a9bfd3','font-size':10,'text-anchor':'middle'},wallMetrics(e,design.elements).effectiveLength.toFixed(2)+' m');continue;
+   const labelX=x,labelY=y-12;el('text',{x:labelX,y:labelY,fill:'#a9bfd3','font-size':10,'text-anchor':'middle'},wallMetrics(e,design.elements,design.wallTopology?.overrides||[]).effectiveLength.toFixed(2)+' m');continue;
   }
   el('rect',{x:x-w/2,y:y-h/2,width:w,height:h,transform:'rotate('+angle+' '+x+' '+y+')',fill:e.type==='slab'?'#788da7':e.type==='roof'?'#b8875d':'#476b83','fill-opacity':'.68',stroke:e.id===selected?'#ffd16b':'#d6e7f3','stroke-width':e.id===selected?3:1.5});
  }
