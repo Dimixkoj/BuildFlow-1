@@ -1,4 +1,4 @@
-import { wallJoinCandidates } from './wall-levels.mjs';
+import { wallJoinCandidates, traceWallsAcrossLevels } from './wall-levels.mjs';
 const EPS=1e-8;
 const rad=d=>(Number(d)||0)*Math.PI/180;
 const dot=(a,b)=>a.x*b.x+a.y*b.y;
@@ -98,9 +98,9 @@ export function rebuildWallTopology(model){
   }
  }
  joins.sort((a,b)=>a.id.localeCompare(b.id));
- const previous=model.wallTopology||{},overrides=Array.isArray(previous.overrides)?previous.overrides:[],connections=Array.isArray(previous.connections)?previous.connections:[],signature=JSON.stringify({joins,overrides,connections});
+ const previous=model.wallTopology||{},overrides=Array.isArray(previous.overrides)?previous.overrides:[],connections=Array.isArray(previous.connections)?previous.connections:[],verticalTraces=traceWallsAcrossLevels(model),signature=JSON.stringify({joins,overrides,connections,verticalTraces});
  const unchanged=previous.signature===signature;
- model.wallTopology={schemaVersion:1,revision:unchanged?(previous.revision||1):(previous.revision||0)+1,signature,joins,overrides,connections,clusters:Array.isArray(previous.clusters)?previous.clusters:[]};
+ model.wallTopology={schemaVersion:1,revision:unchanged?(previous.revision||1):(previous.revision||0)+1,signature,joins,overrides,connections,verticalTraces,clusters:Array.isArray(previous.clusters)?previous.clusters:[]};
  return model.wallTopology;
 }
 
