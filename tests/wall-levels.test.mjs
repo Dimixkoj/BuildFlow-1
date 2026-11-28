@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {normaliseBuildingLevels,wallVerticalSpan,wallsShareVerticalExtent,traceWallsAcrossLevels,levelWallGraph} from '../renderer/wall-levels.mjs';
+import {normaliseBuildingLevels,wallVerticalSpan,wallsShareVerticalExtent,traceWallsAcrossLevels,levelWallGraph,elementOnLevel} from '../renderer/wall-levels.mjs';
 import {rebuildWallTopology} from '../renderer/wall-topology.mjs';
 import {resolveWallJunctionClusters} from '../renderer/wall-junctions.mjs';
 const levels=[{id:'L0',name:'Ground',elevation:0,height:3,order:0},{id:'L1',name:'First',elevation:3,height:3,order:1},{id:'L2',name:'Second',elevation:6,height:3,order:2}];
@@ -23,4 +23,13 @@ test('reports finish wrap and join behaviour changes between storeys',()=>{
  const trace=traceWallsAcrossLevels(model)[0];
  assert.equal(trace.layerContinuity,'changed');
  assert.ok(trace.layerChanges.some(x=>x.key==='core'&&x.from.joinBehaviour==='miter'&&x.to.joinBehaviour==='butt'));
+});
+
+test('tracks one continuous wall through every occupied storey without assigning it to the level above its top',()=>{
+ const m={levels,elements:[wall('multi','L0',{topLevelId:'L2',height:6})]};
+ const trace=traceWallsAcrossLevels(m).find(x=>x.id==='wall-span:multi');
+ assert.deepEqual(trace.occupiedLevelIds,['L0','L1']);
+ assert.equal(elementOnLevel(m.elements[0],m,'L1'),true);
+ assert.equal(elementOnLevel(m.elements[0],m,'L2'),false);
+ assert.deepEqual(levelWallGraph(m).map(x=>x.walls),[['multi'],['multi'],[]]);
 });
