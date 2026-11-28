@@ -26,7 +26,7 @@ export function exportIFC(model){
   const propertyRefs=props.map(([name,val,type])=>add('IFCPROPERTYSINGLEVALUE('+q(name)+',$,'+type+'('+val+'),$)')),pset=add('IFCPROPERTYSET('+q(guid(500+i))+','+oh+','+q('ConFlow Parameters')+',$,('+propertyRefs.join(',')+'))');
   add('IFCRELDEFINESBYPROPERTIES('+q(guid(800+i))+','+oh+',$,$,('+prod+'),'+pset+')');
   if(e.type==='wall'&&Array.isArray(e.layers)&&e.layers.length){const layerRefs=e.layers.map((l,j)=>{const mat=add('IFCMATERIAL('+q(l.material||'Unspecified')+')');return add('IFCMATERIALLAYER('+mat+','+(Number(l.thickness)||0).toFixed(5)+',$,'+q(l.name||l.id||'Layer '+(j+1))+',$,'+q(l.kind||'')+','+(Number(l.priority)||0)+')')});const set=add('IFCMATERIALLAYERSET(('+layerRefs.join(',')+'),'+q(e.label||'Compound wall layers')+')');add('IFCRELASSOCIATESMATERIAL('+q(guid(1800+i))+','+oh+',$,$,('+prod+'),'+set+')');}
-  if(isOpening)openings.set(e.id,prod);
+  // Keep the opening void separate from its door/window filling element.
  });
  const wallJoinRows=[...(model.wallTopology?.joins||[])];
  for(const cluster of model.wallTopology?.clusters||[]){for(let i=0;i<cluster.wallIds.length;i++)for(let j=i+1;j<cluster.wallIds.length;j++){const a=cluster.wallIds[i],b=cluster.wallIds[j];if(!wallJoinRows.some(x=>(x.wallId===a&&x.otherWallId===b)||(x.wallId===b&&x.otherWallId===a)))wallJoinRows.push({wallId:a,otherWallId:b,endpoint:cluster.members.find(m=>m.wallId===a)?.endpoint||'interior',kind:cluster.kind||'crossing',point:cluster.point,mode:'cluster',continuationWallId:cluster.continuationWallId})}}
