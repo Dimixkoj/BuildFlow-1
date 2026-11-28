@@ -31,11 +31,11 @@ function wallMesh(w,all,ev){
    try{base=ev.evaluate(base,cut,SUBTRACTION);base.updateMatrixWorld(true)}catch(err){console.warn('CSG opening failed for wall layer',layer.id,err)}
   }
   const mesh=new THREE.Mesh(base.geometry,material({...w,material:layer.material||w.material}));
-  mesh.position.set(layerWall.x,w.z+w.height/2,layerWall.y);mesh.rotation.y=-(w.rotation||0)*Math.PI/180;mesh.castShadow=true;mesh.receiveShadow=true;
+  mesh.position.set(0,0,centre);mesh.castShadow=true;mesh.receiveShadow=true;
   mesh.userData={id:w.id,elementId:w.id,wallLayerId:layer.id,wallLayerKind:layer.kind,wallTopology:{schemaVersion:1,joins:join.joins.map(j=>({wallId:j.wallId,endpoint:j.endpoint,otherWallId:j.otherWallId,kind:j.kind}))},join:{startTrim:join.startTrim,endTrim:join.endTrim,joins:join.joins}};
   group.add(mesh);layerMeta.push({id:layer.id,kind:layer.kind,material:layer.material,thickness:layer.thickness,centreOffset:centre,joinBehaviour:layer.joinBehaviour,wrapAtJunction:layer.wrapAtJunction});offset+=layer.thickness;
  }
- group.userData={id:w.id,elementId:w.id,wallTopology:{schemaVersion:1},compoundWall:{totalThickness:total,layers:layerMeta}};
+ group.position.set(w.x,w.z+w.height/2,w.y);group.rotation.y=-(w.rotation||0)*Math.PI/180;group.userData={id:w.id,elementId:w.id,wallTopology:{schemaVersion:1},compoundWall:{totalThickness:total,layers:layerMeta}};
  return group;
 }
 function objectMesh(e,all,ev){if(e.type==='wall')return wallMesh(e,all,ev);const g=new THREE.Group();g.position.set(e.x,e.z,e.y);g.rotation.y=-(e.rotation||0)*Math.PI/180;g.userData={id:e.id};const add=(geo,matl,x,y,z)=>{const m=new THREE.Mesh(geo,matl);m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;g.add(m)};
