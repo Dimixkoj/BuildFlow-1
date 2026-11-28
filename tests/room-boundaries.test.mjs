@@ -30,3 +30,10 @@ test('supports a curved manual room boundary and editable room records',()=>{
  assert.equal(deleteManualRoomSpace(model,'atrium'),true);
  assert.equal(resolveManualRoomSpaces(model).length,0);
 });
+
+test('detects a circular room from a curved wall boundary',()=>{
+ const model={elements:[{id:'curved-perimeter',type:'wall',x:0,y:0,z:0,length:Math.PI*4,width:.2,height:3,rotation:0,curve:{type:'arc',center:{x:0,y:0},radius:2,startAngle:0,endAngle:360,segments:48}}]};
+ const rooms=resolveRoomBoundaries(model);
+ assert.equal(rooms.length,1);
+ assert.ok(rooms[0].area>11.1&&rooms[0].area<11.5);
+});
