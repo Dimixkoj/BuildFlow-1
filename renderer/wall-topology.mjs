@@ -91,9 +91,9 @@ export function rebuildWallTopology(model){
   }
  }
  joins.sort((a,b)=>a.id.localeCompare(b.id));
- const previous=model.wallTopology||{},signature=JSON.stringify(joins);
+ const previous=model.wallTopology||{},overrides=Array.isArray(previous.overrides)?previous.overrides:[],signature=JSON.stringify({joins,overrides});
  const unchanged=previous.signature===signature;
- model.wallTopology={schemaVersion:1,revision:unchanged?(previous.revision||1):(previous.revision||0)+1,signature,joins,overrides:Array.isArray(previous.overrides)?previous.overrides:[],clusters:Array.isArray(previous.clusters)?previous.clusters:[]};
+ model.wallTopology={schemaVersion:1,revision:unchanged?(previous.revision||1):(previous.revision||0)+1,signature,joins,overrides,clusters:Array.isArray(previous.clusters)?previous.clusters:[]};
  return model.wallTopology;
 }
 
