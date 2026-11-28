@@ -44,14 +44,17 @@ function endpointHit(wall,other,sign,tolerance=.18){
  };
 }
 
-export function computeWallJoinGeometry(wall,walls=[]){
+export function computeWallJoinGeometry(wall,walls=[],overrides=[]){
  const half=Math.max(.001,(+wall.length||0)/2),width=Math.max(.01,+wall.width||.15);
  const cuts={start:[-half,-half],end:[half,half]},joins=[];
  for(const other of walls||[]){
   if(other?.type!=='wall'||other.id===wall.id)continue;
   for(const [name,sign] of [['start',-1],['end',1]]){
-   const hit=endpointHit(wall,other,sign);if(!hit)continue;
-   if(hit.kind==='corner'&&wallPriority(wall)>wallPriority(other))continue;
+   const control=(overrides||[]).find(o=>o.wallId===wall.id&&o.otherWallId===other.id&&o.endpoint===name);
+   const unjoined=(overrides||[]).some(o=>o.mode==='unjoin'&&((o.wallId===wall.id&&o.otherWallId===other.id&&o.endpoint===name)||(o.wallId===other.id&&o.otherWallId===wall.id)));
+   if(unjoined)continue;
+   const hit=endpointHit(wall,other,sign,control&&['join','override'].includes(control.mode)?.5:.18);if(!hit)continue;
+   if(!control&&hit.kind==='corner'&&wallPriority(wall)>wallPriority(other))continue;
    const target=cuts[name];
    for(let i=0;i<2;i++)target[i]=sign<0?Math.max(target[i],hit.sideCuts[i]):Math.min(target[i],hit.sideCuts[i]);
    joins.push(hit);
@@ -63,14 +66,14 @@ export function computeWallJoinGeometry(wall,walls=[]){
  return{startTrim,endTrim,length,centreOffset:(startTrim-endTrim)/2,startCut:cuts.start,endCut:cuts.end,joins};
 }
 
-export function wallFootprint(wall,walls=[]){
- const g=computeWallJoinGeometry(wall,walls),{u,n}=frame(wall),h=wall.width/2;
+export function wallFootprint(wall,walls=[],overrides=[]){
+ const g=computeWallJoinGeometry(wall,walls,overrides),{u,n}=frame(wall),h=wall.width/2;
  const local=[[g.startCut[0],h],[g.endCut[0],h],[g.endCut[1],-h],[g.startCut[1],-h]];
  const cx=Number(wall.x)||0,cy=Number(wall.y)||0;return local.map(([s,side])=>({x:cx+u.x*s+n.x*side,y:cy+u.y*s+n.y*side}));
 }
 
-export function wallMetrics(wall,walls=[]){
- const join=computeWallJoinGeometry(wall,walls),footprint=wallFootprint(wall,walls);
+export function wallMetrics(wall,walls=[],overrides=[]){
+ const join=computeWallJoinGeometry(wall,walls,overrides),footprint=wallFootprint(wall,walls,overrides);
  return{...join,footprint,planArea:area(footprint),effectiveLength:join.length};
 }
 
