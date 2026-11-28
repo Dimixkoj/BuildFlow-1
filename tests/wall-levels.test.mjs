@@ -33,3 +33,9 @@ test('tracks one continuous wall through every occupied storey without assigning
  assert.equal(elementOnLevel(m.elements[0],m,'L2'),false);
  assert.deepEqual(levelWallGraph(m).map(x=>x.walls),[['multi'],['multi'],[]]);
 });
+
+test('hosted openings remain on their own storey when the host wall spans multiple floors',()=>{
+ const model={levels,elements:[wall('multi','L0',{topLevelId:'L2',height:6}),{id:'door',type:'door',x:0,y:0,z:0,length:1,width:.08,height:2,rotation:0,hostId:'multi'}]};
+ assert.equal(elementOnLevel(model.elements[1],model,'L0'),true);
+ assert.equal(elementOnLevel(model.elements[1],model,'L1'),false);
+});
