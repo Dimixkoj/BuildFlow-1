@@ -33,7 +33,7 @@ test('scales selected group members in all three parametric dimensions',()=>{
 });
 
 test('attaches an opening to a wall centreline and clamps it inside the wall',()=>{
- const w=wall('host',0,0,4,90),d={id:'door',type:'door',hostId:null,x:0.2,y:9,z:-1,length:1,width:.08,height:2,rotation:0},model={elements:[w,d]};
+ const w=wall('host',0,0,4,90),d={id:'door',type:'door',hostId:null,x:0.2,y:2.2,z:-1,length:1,width:.08,height:2,rotation:0},model={elements:[w,d]};
  const r=attachOpeningToWall(model,'door');
  assert.equal(r.ok,true);assert.equal(d.hostId,'host');assert.equal(d.rotation,90);
  assert.ok(Math.abs(d.x)<1e-8);assert.ok(Math.abs(d.y-1.5)<1e-8);assert.equal(d.z,0);
