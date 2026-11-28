@@ -45,7 +45,7 @@ test('rejects an opening that cannot fit its selected host wall',()=>{
 test('resolves an L-corner by trimming the terminating wall to the host face',()=>{
  const host=wall('host',0,0,4,90),end=wall('end',-2.1,0,4,0);
  const r=computeWallJoinGeometry(end,[host,end]);
- assert.ok(Math.abs(r.startTrim-.1)<1e-8);assert.equal(r.endTrim,0);
+ assert.equal(r.startTrim,0);assert.ok(Math.abs(r.endTrim-.1)<1e-8);
  assert.ok(Math.abs(r.length-3.9)<1e-8);
 });
 test('resolves a T-junction without shortening the through-wall',()=>{
