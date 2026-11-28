@@ -21,7 +21,12 @@ function wallMesh(w,all,ev,model){
  let layerOffset=-total/2;const layerMeta=[];
  for(const layer of layers){
   const centre=layerOffset+layer.thickness/2,layerWall={...w,width:layer.thickness,x:w.x+n.x*centre,y:w.y+n.y*centre};
-  const join=computeWallJoinGeometry(layerWall,joinWalls,model?.wallTopology?.overrides||[]),shape=new THREE.Shape(),z0=-layer.thickness/2,z1=layer.thickness/2;
+  const layerPeers=joinWalls.filter(v=>v.id!==w.id).map(other=>{
+    const peers=normaliseWallLayers(other),peer=peers.find(l=>l.id===layer.id)||peers.find(l=>l.kind===layer.kind)||peers.find(l=>l.kind==='core')||peers[0];
+    const peerTotal=peers.reduce((s,l)=>s+l.thickness,0),peerIndex=peers.indexOf(peer),peerCentre=-peerTotal/2+peers.slice(0,peerIndex).reduce((s,l)=>s+l.thickness,0)+peer.thickness/2,otherAngle=(other.rotation||0)*Math.PI/180,otherNormal={x:-Math.sin(otherAngle),y:Math.cos(otherAngle)};
+    return{...other,width:peer.thickness,x:other.x+otherNormal.x*peerCentre,y:other.y+otherNormal.y*peerCentre,_layerId:peer.id,_layerKind:peer.kind};
+   });
+   const join=computeWallJoinGeometry(layerWall,layerPeers,model?.wallTopology?.overrides||[]),shape=new THREE.Shape(),z0=-layer.thickness/2,z1=layer.thickness/2;
   shape.moveTo(join.startCut[0],-z0);shape.lineTo(join.endCut[0],-z0);shape.lineTo(join.endCut[1],-z1);shape.lineTo(join.startCut[1],-z1);shape.closePath();
   const wallGeometry=new THREE.ExtrudeGeometry(shape,{depth:w.height,bevelEnabled:false,steps:1});wallGeometry.rotateX(-Math.PI/2);wallGeometry.translate(0,-w.height/2,0);
   let base=new Brush(wallGeometry,material({...w,material:layer.material||w.material}));
@@ -31,7 +36,8 @@ function wallMesh(w,all,ev,model){
    cut.position.set(p.x,o.z+o.height/2-(w.z+w.height/2),p.z);cut.updateMatrixWorld(true);
    try{base=ev.evaluate(base,cut,SUBTRACTION);base.updateMatrixWorld(true)}catch(err){console.warn('CSG opening failed for wall layer',layer.id,err)}
   }
-  for(const other of joinWalls.filter(v=>v.id!==w.id)){
+  for(const originalOther of joinWalls.filter(v=>v.id!==w.id)){
+    const other=layerPeers.find(v=>v.id===originalOther.id)||originalOther;
    const cluster=model?.wallTopology?.clusters?.find(x=>x.wallIds?.includes(w.id)&&x.wallIds?.includes(other.id)),priority=wallPriority(other)-wallPriority(w),wins=cluster?.continuationWallId?cluster.continuationWallId===other.id:priority>0||(priority===0&&String(other.id).localeCompare(String(w.id))<0);if(!wins)continue;
    if(model?.wallTopology?.overrides?.some(o=>o.mode==='unjoin'&&((o.wallId===w.id&&o.otherWallId===other.id)||(o.wallId===other.id&&o.otherWallId===w.id))))continue;
    if(Math.min(w.z+w.height,other.z+other.height)<=Math.max(w.z,other.z)+1e-6)continue;
