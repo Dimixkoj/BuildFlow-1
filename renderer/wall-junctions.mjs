@@ -6,6 +6,15 @@ const normal=w=>{const u=unit(w);return{x:-u.y,y:u.x}};
 const point=(w,s,side=0)=>{const u=unit(w),n=normal(w);return{x:w.x+u.x*s+n.x*side,y:w.y+u.y*s+n.y*side}};
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const stable=(...parts)=>parts.map(v=>String(v??'')).join('|');
+const endpointAt=(wall,p,tolerance=.015)=>{const u=unit(wall),along=(p.x-wall.x)*u.x+(p.y-wall.y)*u.y;if(Math.abs(along+wall.length/2)<=tolerance)return'start';if(Math.abs(along-wall.length/2)<=tolerance)return'end';return'interior'};
+function centrelineIntersection(a,b){
+ const ua=unit(a),ub=unit(b),pa=point(a,-a.length/2),pb=point(b,-b.length/2),r={x:ua.x*a.length,y:ua.y*a.length},s={x:ub.x*b.length,y:ub.y*b.length},den=r.x*s.y-r.y*s.x;
+ if(Math.abs(den)<1e-8)return null;
+ const q={x:pb.x-pa.x,y:pb.y-pa.y},t=(q.x*s.y-q.y*s.x)/den,u=(q.x*r.y-q.y*r.x)/den;
+ if(t< -1e-7||t>1+1e-7||u< -1e-7||u>1+1e-7)return null;
+ return{point:{x:pa.x+r.x*t,y:pa.y+r.y*t},t,u};
+}
+
 
 export function wallPriority(wall){
  const role=String(wall?.wallRole||wall?.function||'').toLowerCase();
@@ -24,6 +33,14 @@ export function resolveWallJunctionClusters(model,{tolerance=.08}={}){
  if(!model||!Array.isArray(model.elements))return[];
  const topology=rebuildWallTopology(model),walls=model.elements.filter(e=>e?.type==='wall');
  const records=(topology.joins||[]).map(j=>({...j,wall:walls.find(w=>w.id===j.wallId),other:walls.find(w=>w.id===j.otherWallId)})).filter(j=>j.wall&&j.other&&!topology.overrides?.some(o=>o.mode==='unjoin'&&((o.wallId===j.wallId&&o.otherWallId===j.otherWallId&&o.endpoint===j.endpoint)||(o.wallId===j.otherWallId&&o.otherWallId===j.wallId))));
+ for(let i=0;i<walls.length;i++)for(let j=i+1;j<walls.length;j++){
+  const a=walls[i],b=walls[j],hit=centrelineIntersection(a,b);if(!hit)continue;
+  const exists=records.some(r=>((r.wallId===a.id&&r.otherWallId===b.id)||(r.wallId===b.id&&r.otherWallId===a.id))&&distance(r.point,hit.point)<=tolerance);
+  if(exists)continue;
+  const ea=endpointAt(a,hit.point),eb=endpointAt(b,hit.point);
+  records.push({id:'cross:'+stable(a.id,ea,b.id,eb),wallId:a.id,otherWallId:b.id,endpoint:ea,otherEndpoint:eb,kind:'crossing',point:hit.point,wall:a,other:b,mode:'auto'});
+  records.push({id:'cross:'+stable(b.id,eb,a.id,ea),wallId:b.id,otherWallId:a.id,endpoint:eb,otherEndpoint:ea,kind:'crossing',point:hit.point,wall:b,other:a,mode:'auto'});
+ }
  for(const override of topology.overrides||[]){
   if(!['join','override'].includes(override.mode))continue;
   const wall=walls.find(w=>w.id===override.wallId),other=walls.find(w=>w.id===override.otherWallId);
@@ -43,7 +60,7 @@ export function resolveWallJunctionClusters(model,{tolerance=.08}={}){
   const byWall=new Map();
   for(const r of g.records){
    const key=stable(r.wallId,r.endpoint);if(!byWall.has(key))byWall.set(key,{wall:r.wall,endpoint:r.endpoint,relationships:[]});byWall.get(key).relationships.push(r);
-   const targetKey=stable(r.otherWallId,'face');if(!byWall.has(targetKey))byWall.set(targetKey,{wall:r.other,endpoint:'face',relationships:[]});byWall.get(targetKey).relationships.push(r);
+   const targetEndpoint=r.otherEndpoint||endpointAt(r.other,r.point,tolerance),targetKey=stable(r.otherWallId,targetEndpoint);if(!byWall.has(targetKey))byWall.set(targetKey,{wall:r.other,endpoint:targetEndpoint,relationships:[]});byWall.get(targetKey).relationships.push(r);
   }
   const members=[...byWall.values()];
   const uniqueWalls=[...new Map(members.map(m=>[m.wall.id,m.wall])).values()];
@@ -58,7 +75,7 @@ export function resolveWallJunctionClusters(model,{tolerance=.08}={}){
    return{wallId:m.wall.id,endpoint:m.endpoint,priority:wallPriority(m.wall),continues:m.wall.id===continuation?.id,relationships:m.relationships.map(r=>r.id),startCut:geometry.startCut,endCut:geometry.endCut,startTrim:geometry.startTrim,endTrim:geometry.endTrim};
   });
   const pointIds=uniqueWalls.map(w=>w.id).sort();
-  return{id:'junction:'+pointIds.join(':'),point:g.anchor,kind:uniqueWalls.length>2?'multiway':members.some(m=>m.relationships.some(r=>r.kind==='tee'))?'tee':'corner',wallIds:pointIds,continuationWallId:continuation?.id||null,members:memberResults,manual:!!override};
+  return{id:'junction:'+pointIds.join(':')+':'+Math.round(g.anchor.x*1e5)+','+Math.round(g.anchor.y*1e5),point:g.anchor,kind:uniqueWalls.length>2?'multiway':members.every(m=>m.endpoint==='interior')?'crossing':members.some(m=>m.relationships.some(r=>r.kind==='tee'))?'tee':'corner',wallIds:pointIds,continuationWallId:continuation?.id||null,members:memberResults,manual:!!override};
  }).filter(Boolean).sort((a,b)=>a.id.localeCompare(b.id));
 }
 
