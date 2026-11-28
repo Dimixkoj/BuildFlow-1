@@ -126,3 +126,23 @@ export function apply3DGroupTransform(model,ids,transform,baselineModel,pivotSta
  }
  return{ok:true,changed:updated.length,updated};
 }
+
+export function attachOpeningToWall(model,openingId,wallId=null){
+ const opening=model.elements.find(e=>e.id===openingId&&['door','window'].includes(e.type));
+ if(!opening)return{ok:false,reason:'Door or window not found'};
+ const candidates=model.elements.filter(e=>e.type==='wall'&&(!wallId||e.id===wallId)).map(w=>{
+  const a=rad(w.rotation||0),ux=Math.cos(a),uy=Math.sin(a),dx=opening.x-w.x,dy=opening.y-w.y;
+  const along=dx*ux+dy*uy,across=-dx*uy+dy*ux;
+  return{wall:w,ux,uy,along,across,distance:Math.abs(across)};
+ }).filter(v=>v.distance<=Math.max(.25,v.wall.width*1.8)&&Math.abs(v.along)<=v.wall.length/2+opening.length/2)
+ .sort((a,b)=>a.distance-b.distance);
+ const candidate=candidates[0];
+ if(!candidate)return{ok:false,reason:wallId?'Opening is not close enough to the selected wall':'No suitable wall found near this opening'};
+ const {wall,ux,uy}=candidate;
+ if(opening.length>wall.length||opening.height>wall.height)return{ok:false,reason:'Opening is larger than its host wall'};
+ const along=Math.max(-wall.length/2+opening.length/2,Math.min(wall.length/2-opening.length/2,candidate.along));
+ opening.x=wall.x+ux*along;opening.y=wall.y+uy*along;
+ opening.z=Math.max(wall.z,Math.min(opening.z,wall.z+wall.height-opening.height));
+ opening.rotation=wall.rotation||0;opening.hostId=wall.id;
+ return{ok:true,hostId:wall.id,position:{x:opening.x,y:opening.y,z:opening.z}};
+}
