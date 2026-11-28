@@ -88,3 +88,15 @@ test('does not alter parallel walls or an interior cross-junction',()=>{
  const p=computeWallJoinGeometry(a,[a,parallel]);assert.equal(p.length,4);
  const x=computeWallJoinGeometry(a,[a,crossing]);assert.equal(x.length,4);
 });
+
+test('keeps hosted openings in the correct relative position when a wall is resized',()=>{
+ const w=wall('host',0,0,4,0),d={id:'door',type:'door',hostId:'host',x:1,y:0,z:0,length:.9,width:.08,height:2,rotation:0},m={elements:[w,d]};
+ const r=resizeElement(m,'host','length',1.2);
+ assert.equal(r.ok,true);assert.ok(Math.abs(w.length-4.8)<1e-8);assert.ok(Math.abs(d.x-1.2)<1e-8);
+});
+
+test('keeps hosted openings coordinated when a wall is trimmed to a boundary',()=>{
+ const w=wall('host',0,0,6,0),d={id:'door',type:'door',hostId:'host',x:1.5,y:0,z:0,length:.9,width:.08,height:2,rotation:0},boundary=wall('boundary',2.5,0,.2,90),m={elements:[w,d,boundary]};
+ const r=trimExtendElement(m,'host','boundary','trim');
+ assert.equal(r.ok,true);assert.ok(w.length<6);assert.ok(Number.isFinite(d.x));assert.ok(Math.abs(d.y)<1e-8);
+});
