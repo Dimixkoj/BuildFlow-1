@@ -24,6 +24,15 @@ export function resolveWallJunctionClusters(model,{tolerance=.08}={}){
  if(!model||!Array.isArray(model.elements))return[];
  const topology=rebuildWallTopology(model),walls=model.elements.filter(e=>e?.type==='wall');
  const records=(topology.joins||[]).map(j=>({...j,wall:walls.find(w=>w.id===j.wallId),other:walls.find(w=>w.id===j.otherWallId)})).filter(j=>j.wall&&j.other&&!topology.overrides?.some(o=>o.wallId===j.wallId&&o.otherWallId===j.otherWallId&&o.endpoint===j.endpoint&&o.mode==='unjoin'));
+ for(const override of topology.overrides||[]){
+  if(!['join','override'].includes(override.mode))continue;
+  const wall=walls.find(w=>w.id===override.wallId),other=walls.find(w=>w.id===override.otherWallId);
+  if(!wall||!other)continue;
+  const s=override.endpoint==='start'?-wall.length/2:wall.length/2,p=point(wall,s),u=unit(other),dx=p.x-other.x,dy=p.y-other.y,along=dx*u.x+dy*u.y,across=Math.abs(-dx*u.y+dy*u.x);
+  if(Math.abs(along)>other.length/2+other.width/2+tolerance||across>other.width/2+wall.width/2+tolerance)continue;
+  if(records.some(r=>r.wallId===wall.id&&r.otherWallId===other.id&&r.endpoint===override.endpoint))continue;
+  records.push({id:'manual:'+stable(wall.id,override.endpoint,other.id),wallId:wall.id,otherWallId:other.id,endpoint:override.endpoint,kind:'manual',point:p,wall,other,mode:override.mode});
+ }
  const groups=[];
  for(const record of records){
   let group=groups.find(g=>distance(g.anchor,record.point)<=tolerance);
