@@ -93,7 +93,7 @@ function sampleManualBoundary(boundary){
 export function setManualRoomSpace(model,{id,label='Room',levelId=null,boundary=[],areaOverride=null}={}){
  if(!model||!Array.isArray(model.elements))throw new TypeError('A design model is required');
  const points=sampleManualBoundary(boundary);if(points.length<3)throw new Error('A room boundary needs at least three valid points or a closed arc/line sequence');
- const space={id:id||'room-space:'+crypto.randomUUID(),label,levelId,boundary:structuredClone(boundary),areaOverride:Number.isFinite(Number(areaOverride))?Number(areaOverride):null,source:'manual',verified:true};
+ const space={id:id||'room-space:'+crypto.randomUUID(),label,levelId,boundary:structuredClone(boundary),areaOverride:areaOverride!==null&&areaOverride!==undefined&&areaOverride!==''&&Number.isFinite(Number(areaOverride))?Number(areaOverride):null,source:'manual',verified:true};
  model.roomSpaces=Array.isArray(model.roomSpaces)?model.roomSpaces:[];const i=model.roomSpaces.findIndex(x=>x.id===space.id);if(i>=0)model.roomSpaces[i]=space;else model.roomSpaces.push(space);return space;
 }
 export function deleteManualRoomSpace(model,id){if(!Array.isArray(model?.roomSpaces))return false;const n=model.roomSpaces.length;model.roomSpaces=model.roomSpaces.filter(x=>x.id!==id);return model.roomSpaces.length!==n}
