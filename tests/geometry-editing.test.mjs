@@ -43,7 +43,7 @@ test('rejects an opening that cannot fit its selected host wall',()=>{
  const r=attachOpeningToWall(model,'window','short');assert.equal(r.ok,false);assert.match(r.reason,/larger than its host wall/);
 });
 test('resolves an L-corner by trimming the terminating wall to the host face',()=>{
- const host=wall('host',0,0,4,90),end=wall('end',-1.8,0,4,0);
+ const host=wall('host',0,2,4,90),end=wall('end',-2,0,4,0);
  const r=computeWallJoinGeometry(end,[host,end]);
  assert.equal(r.startTrim,0);assert.ok(Math.abs(r.endTrim-.1)<1e-8);
  assert.ok(Math.abs(r.length-3.9)<1e-8);
@@ -66,7 +66,7 @@ test('creates angled miter cuts for acute and obtuse wall corners',()=>{
  assert.ok(obtuse.endCut.every(Number.isFinite));
 });
 test('recomputes wall join cuts after move, rotate, resize and extend edits',()=>{
- const host=wall('host',0,0,5,90),end=wall('end',-1.8,0,4,0);
+ const host=wall('host',0,0,5,90),end=wall('end',-2,0,4,0);
  const model={elements:[host,end]};
  const first=computeWallJoinGeometry(end,model.elements);
  assert.ok(first.endTrim>0);
@@ -76,10 +76,10 @@ test('recomputes wall join cuts after move, rotate, resize and extend edits',()=
  end.rotation=8;
  const rotated=computeWallJoinGeometry(end,model.elements);
  assert.ok(rotated.endCut.every(Number.isFinite));
- end.rotation=0;end.length=4.4;end.x=-2.2;
+ end.rotation=0;end.length=4.4;end.x=-2.0;
  const resized=computeWallJoinGeometry(end,model.elements);
  assert.ok(resized.endTrim>0);
- end.length=5;end.x=-2.5;
+ end.length=5;end.x=-2.3;
  const extended=computeWallJoinGeometry(end,model.elements);
  assert.ok(extended.endTrim>0);
 });
