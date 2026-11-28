@@ -146,3 +146,33 @@ export function attachOpeningToWall(model,openingId,wallId=null){
  opening.rotation=wall.rotation||0;opening.hostId=wall.id;
  return{ok:true,hostId:wall.id,position:{x:opening.x,y:opening.y,z:opening.z}};
 }
+
+/**
+ * Resolve butt-end wall joins in plan geometry. Each wall keeps its own
+ * parametric centreline; only its rendered end faces are shortened to the
+ * face of a perpendicular/intersecting host wall. Interior crossings remain
+ * untouched so T and cross junctions do not shorten the through-wall.
+ */
+export function computeWallJoinGeometry(wall,walls=[]){
+ const a=rad(wall.rotation||0),u={x:Math.cos(a),y:Math.sin(a)};
+ const half=Math.max(.001,(wall.length||0)/2),thickness=Math.max(.01,wall.width||.15);
+ let startTrim=0,endTrim=0;
+ for(const other of walls){
+  if(!other||other.id===wall.id||other.type!=='wall'||!(other.length>0))continue;
+  const b=rad(other.rotation||0),v={x:Math.cos(b),y:Math.sin(b)};
+  const sine=Math.abs(cross(u,v));
+  if(sine<1e-5)continue;
+  const q={x:other.x-wall.x,y:other.y-wall.y};
+  const along=cross(q,v)/cross(u,v);
+  const across=cross(q,u)/cross(u,v);
+  if(Math.abs(across)>other.length/2+thickness/2)continue;
+  const endpointDistance=half-Math.abs(along);
+  if(endpointDistance>Math.max(thickness,other.width||.15)*1.5)continue;
+  const trim=Math.min(half*.45,Math.max(0,(other.width||.15)/2/sine));
+  if(along<0)startTrim=Math.max(startTrim,trim);
+  else endTrim=Math.max(endTrim,trim);
+ }
+ const length=Math.max(.02,(wall.length||0)-startTrim-endTrim);
+ const centreOffset=(startTrim-endTrim)/2;
+ return{startTrim,endTrim,length,centreOffset,center:{x:wall.x+u.x*centreOffset,y:wall.y+u.y*centreOffset}};
+}
