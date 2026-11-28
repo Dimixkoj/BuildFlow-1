@@ -29,8 +29,9 @@ export function rotateSelection(model,ids,degrees){
 export function resizeElement(model,id,dimension,factor){
  const e=model.elements.find(x=>x.id===id);if(!e)return{ok:false,reason:'Object not found'};
  if(!['length','width','height'].includes(dimension)||!Number.isFinite(factor)||factor<=0)return{ok:false,reason:'Invalid resize input'};
- const old=e[dimension],next=old*factor;if(!Number.isFinite(next)||next<.02)return{ok:false,reason:'Resulting dimension is too small'};
- e[dimension]=next;return{ok:true,old,next};
+ const baseline=structuredClone(model),old=e[dimension],next=old*factor;if(!Number.isFinite(next)||next<.02)return{ok:false,reason:'Resulting dimension is too small'};
+ e[dimension]=next;if(e.type==='wall'){const sync=syncHostedOpeningsAfterWallTransform(model,id,baseline);if(!sync.ok){model.elements=baseline.elements;return{ok:false,reason:sync.reason}}}
+ return{ok:true,old,next};
 }
 export function alignSelection(model,ids,axis,mode='center'){
  const list=model.elements.filter(e=>ids.includes(e.id));if(list.length<2)return{ok:false,reason:'Select at least two objects'};
@@ -48,7 +49,7 @@ export function offsetElement(model,id,distance,side=1){
 function cross(a,b){return a.x*b.y-a.y*b.x}
 function intersect(p,r,q,s,allowOutside=false){const d=cross(r,s);if(Math.abs(d)<EPS)return null;const t=cross({x:q.x-p.x,y:q.y-p.y},s)/d,u=cross({x:q.x-p.x,y:q.y-p.y},r)/d;return (allowOutside||t>=-EPS&&t<=1+EPS)&&u>=-EPS&&u<=1+EPS?{x:p.x+t*r.x,y:p.y+t*r.y,t}:null}
 export function trimExtendElement(model,id,referenceId,mode){
- const e=model.elements.find(x=>x.id===id),ref=model.elements.find(x=>x.id===referenceId);if(!e||!ref||e.id===ref.id)return{ok:false,reason:'Select a target and a different boundary object'};
+ const baseline=structuredClone(model),e=model.elements.find(x=>x.id===id),ref=model.elements.find(x=>x.id===referenceId);if(!e||!ref||e.id===ref.id)return{ok:false,reason:'Select a target and a different boundary object'};
  if(!['trim','extend'].includes(mode))return{ok:false,reason:'Unknown operation'};
  if(!['wall','beam'].includes(e.type))return{ok:false,reason:'Trim and extend currently operate on wall and beam centre-lines'};
  const u=unit(e),v={x:-u.y,y:u.x},start={x:e.x-u.x*e.length/2,y:e.y-u.y*e.length/2},end={x:e.x+u.x*e.length/2,y:e.y+u.y*e.length/2};
@@ -70,6 +71,7 @@ export function trimExtendElement(model,id,referenceId,mode){
   if(length<=old+EPS)return{ok:false,reason:'Boundary is not beyond an endpoint'};
   e.length=length;e.x=(newStart.x+newEnd.x)/2;e.y=(newStart.y+newEnd.y)/2;
  }
+ if(e.type==='wall'){const sync=syncHostedOpeningsAfterWallTransform(model,id,baseline);if(!sync.ok){model.elements=baseline.elements;return{ok:false,reason:sync.reason}}}
  return{ok:true,oldLength:old,newLength:e.length,referenceId:ref.id};
 }
 
@@ -125,6 +127,7 @@ export function apply3DGroupTransform(model,ids,transform,baselineModel,pivotSta
   target.length=base.length*scale.x;target.height=base.height*scale.y;target.width=base.width*scale.z;
   updated.push(target.id);
  }
+ for(const base of members.filter(e=>e.type==='wall')){const sync=syncHostedOpeningsAfterWallTransform(model,base.id,baselineModel);if(!sync.ok)return{ok:false,reason:sync.reason}}
  return{ok:true,changed:updated.length,updated};
 }
 
