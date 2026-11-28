@@ -4,7 +4,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
 import { computeWallJoinGeometry, wallFootprint, rebuildWallTopology } from './wall-topology.mjs';
-import { normaliseWallLayers } from './wall-junctions.mjs';
+import { normaliseWallLayers, wallPriority } from './wall-junctions.mjs';
 export const defaults={wall:{label:'Wall',length:4,width:.15,height:3},foundation:{label:'Pad footing',length:1.5,width:1.5,height:.45},door:{label:'Door',length:.9,width:.08,height:2.1},window:{label:'Window',length:1.2,width:.08,height:1.2},slab:{label:'Floor slab',length:5,width:4,height:.15},roof:{label:'Roof',length:6,width:5,height:.25},column:{label:'Column',length:.3,width:.3,height:3},beam:{label:'Beam',length:4,width:.25,height:.35},stair:{label:'Stair flight',length:3,width:1.1,height:1.8},furniture:{label:'Furniture',length:1.8,width:.8,height:.75},bed:{label:'Bed',length:2,width:1.6,height:.55},sofa:{label:'Sofa',length:2,width:.85,height:.85},table:{label:'Table',length:1.4,width:.8,height:.75},wardrobe:{label:'Wardrobe',length:1.8,width:.65,height:2.2},light:{label:'Light fixture',length:.45,width:.45,height:.08},cabinet:{label:'Kitchen cabinet',length:1.2,width:.6,height:.9},plumbing:{label:'Plumbing fixture',length:.35,width:.35,height:.4},electrical:{label:'Electrical point',length:.12,width:.12,height:.12},landscape:{label:'Landscape zone',length:4,width:3,height:.05}};
 const id=()=>crypto.randomUUID(),color=n=>({Concrete:0x9ba4ad,Blockwork:0xb9aa98,Timber:0x986d48,'Oak Timber':0xb18453,'Walnut Timber':0x68432f,Glass:0x69c8ee,Steel:0x71869b,Aluminium:0xa9b3ba,'Stainless Steel':0xbac4cc,Tile:0x9c7664,'Ceramic Tile':0xc5c0b6,Porcelain:0xd8d5ce,Marble:0xd5d0c6,Granite:0x777b7c,Brick:0xa65f49,Plaster:0xd8d5ca,Paint:0xe9e6df,'Gypsum Board':0xe2e1dc,Carpet:0x777b83,Asphalt:0x454a4f,Sand:0xc8b184,Soil:0x806348,Waterproofing:0x3d6878,Insulation:0xd8c37b}[n]||0x6ba9a0);
 export function make(type,x=0,y=0,z=0){const d=defaults[type]||defaults.furniture;return{id:id(),type,label:d.label,x,y,z,length:d.length,width:d.width,height:d.height,rotation:0,visible:true,layer:['door','window'].includes(type)?'Openings':['bed','sofa','table','wardrobe','cabinet','furniture'].includes(type)?'Interior':['plumbing','electrical','light'].includes(type)?'MEP':type==='landscape'?'Site':type==='slab'||type==='roof'||type==='column'||type==='beam'||type==='foundation'?'Structure':'Architecture',material:type==='window'?'Glass':type==='door'?'Timber':'Default',hostId:null,roofStyle:'gable',pitch:30,properties:{}}}
@@ -29,6 +29,15 @@ function wallMesh(w,all,ev){
    const p=offset(o,layerWall),cut=new Brush(new THREE.BoxGeometry(o.length,o.height,layer.thickness*3),new THREE.MeshBasicMaterial());
    cut.position.set(p.x,o.z+o.height/2-(w.z+w.height/2),p.z);cut.updateMatrixWorld(true);
    try{base=ev.evaluate(base,cut,SUBTRACTION);base.updateMatrixWorld(true)}catch(err){console.warn('CSG opening failed for wall layer',layer.id,err)}
+  }
+  for(const other of all.filter(v=>v.type==='wall'&&v.id!==w.id)){
+   const priority=wallPriority(other)-wallPriority(w),wins=priority>0||(priority===0&&String(other.id).localeCompare(String(w.id))<0);if(!wins)continue;
+   if(Math.min(w.z+w.height,other.z+other.height)<=Math.max(w.z,other.z)+1e-6)continue;
+   const p=offset(other,layerWall),q=offset(w,other),angleDiff=Math.abs(Math.sin(((other.rotation||0)-(w.rotation||0))*Math.PI/180));
+   if(angleDiff<1e-4||Math.abs(p.x)>=w.length/2-.015||Math.abs(q.x)>=other.length/2-.015)continue;
+   const cut=new Brush(new THREE.BoxGeometry(other.length+.02,other.height+.02,other.width+.02),new THREE.MeshBasicMaterial());
+   cut.position.set(p.x,other.z+other.height/2-(w.z+w.height/2),p.z);cut.rotation.y=-((other.rotation||0)-(w.rotation||0))*Math.PI/180;cut.updateMatrixWorld(true);
+   try{base=ev.evaluate(base,cut,SUBTRACTION);base.updateMatrixWorld(true)}catch(err){console.warn('Priority junction cut failed',w.id,other.id,err)}
   }
   const mesh=new THREE.Mesh(base.geometry,material({...w,material:layer.material||w.material}));
   mesh.position.set(0,0,centre);mesh.castShadow=true;mesh.receiveShadow=true;
