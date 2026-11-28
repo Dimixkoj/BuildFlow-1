@@ -7,7 +7,7 @@ import {quantityLinesFor} from './quantity-takeoff.mjs';
 import {wallFootprint,wallMetrics,rebuildWallTopology} from './wall-topology.mjs';
 import {resolveWallJunctionClusters,setWallJoinOverride,setJunctionContinuation,normaliseWallLayers,resolveCompoundWallJoin} from './wall-junctions.mjs';
 import {resolveRoomBoundaries,setManualRoomSpace,deleteManualRoomSpace} from './room-boundaries.mjs';
-import {normaliseBuildingLevels,wallJoinCandidates,traceWallsAcrossLevels,wallVerticalSpan,elementLevelId} from './wall-levels.mjs';
+import {normaliseBuildingLevels,wallJoinCandidates,traceWallsAcrossLevels,wallVerticalSpan,elementLevelId,elementOnLevel} from './wall-levels.mjs';
 import {TRADES,tradeForItem,rateBuildUp,itemAmount,tradeSummary,dimensionSheet} from './estimating-engine.mjs';
 import {simulateServiceLife} from './durability-simulation.mjs';
 import {buildAnalysisPackage,validateSolverResults} from './structural-analysis-bridge.mjs';
@@ -28,7 +28,7 @@ function dirty(msg='Model modified · save to local workspace'){design.version=(
 function undo(){if(!history.length)return;future.push(clone(design));design=history.pop();selected=null;selectedIds.clear();dirty('Undo applied')}
 function redo(){if(!future.length)return;history.push(clone(design));design=future.pop();selected=null;selectedIds.clear();dirty('Redo applied')}
 function planRender(){const g=$('cad-elements');g.replaceChildren();const ns='http://www.w3.org/2000/svg';const el=(tag,attrs,text)=>{const n=document.createElementNS(ns,tag);Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v));if(text)n.textContent=text;g.append(n);return n};
- for(const e of design.elements.filter(x=>x.visible!==false&&(!design.activeLevelId||elementLevelId(x,design)===design.activeLevelId))){
+ for(const e of design.elements.filter(x=>x.visible!==false&&(!design.activeLevelId||elementOnLevel(x,design,design.activeLevelId)))){
   const x=450+(e.x-5)*48,y=285+(e.y-5)*48,w=Math.max(4,e.length*48),h=Math.max(5,e.width*48),angle=-(e.rotation||0);
   if(e.type==='door'||e.type==='window'){el('line',{x1:x-w/2,y1:y,x2:x+w/2,y2:y,transform:'rotate('+angle+' '+x+' '+y+')',stroke:e.type==='door'?'#d5a85f':'#5eb9e7','stroke-width':5,'stroke-linecap':'round'});el('text',{x:x,y:y-9,fill:'#dce9f5','font-size':10,'text-anchor':'middle'},e.type==='door'?'D':'W');continue}
   if(e.type==='wall'){
