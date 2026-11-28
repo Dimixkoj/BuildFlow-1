@@ -36,7 +36,7 @@ function canonicalCycle(ids){const variants=[];for(const seq of [ids,[...ids].re
  */
 export function resolveRoomBoundaries(model,{minimumArea=.25,tolerance=.015,levelId=null}={}){
  const allWalls=(model?.elements||[]).filter(e=>e?.type==='wall'&&e.visible!==false&&Number(e.length)>0&&Number(e.width)>0);
- const grouped=new Map();for(const w of allWalls){const span=wallVerticalSpan(w,model),key=span.baseLevelId||'elevation:'+span.baseElevation.toFixed(4);if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(w)}
+ const grouped=new Map(),levels=Array.isArray(model?.levels)?model.levels:[];for(const w of allWalls){const span=wallVerticalSpan(w,model);if(levels.length){for(const level of levels){if(span.zMax>Number(level.elevation)+1e-6&&span.zMin<Number(level.elevation)+Number(level.height||3)-1e-6){if(!grouped.has(level.id))grouped.set(level.id,[]);grouped.get(level.id).push(w)}}}else{const key=span.baseLevelId||'elevation:'+span.baseElevation.toFixed(4);if(!grouped.has(key))grouped.set(key,[]);grouped.get(key).push(w)}}
  if(levelId){const walls=grouped.get(levelId)||[];return resolveRoomBoundariesForWalls(model,walls,{minimumArea,tolerance,levelId})}
  return [...grouped.entries()].flatMap(([id,walls])=>resolveRoomBoundariesForWalls(model,walls,{minimumArea,tolerance,levelId:id})).concat(resolveManualRoomSpaces(model,levelId));
 }
