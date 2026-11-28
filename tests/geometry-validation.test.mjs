@@ -9,3 +9,11 @@ test('rejects duplicate object IDs',()=>{const r=validateGeometry({elements:[wal
 test('rejects openings extending beyond the host wall',()=>{const r=validateGeometry({elements:[wall,{...door,x:2.5}]});assert.equal(r.valid,false);assert.ok(r.errors.some(x=>x.includes('extends beyond its host wall')))});
 test('rejects openings outside host wall vertical limits',()=>{const r=validateGeometry({elements:[wall,{...door,z:1.2}]});assert.equal(r.valid,false);assert.ok(r.errors.some(x=>x.includes('exceeds host wall vertical limits')))});
 test('rejects invalid roof pitch',()=>{const roof={id:'r1',type:'roof',x:0,y:0,z:3,length:6,width:5,height:.2,rotation:0,roofStyle:'gable',pitch:75};const r=validateGeometry({elements:[roof]});assert.equal(r.valid,false);assert.ok(r.errors.some(x=>x.includes('roof pitch')))});
+
+test('validates persistent wall join references against model walls',()=>{
+ const host={...wall,id:'host',x:0,y:2,length:4,rotation:90},end={...wall,id:'end',x:-2,y:0,length:4,rotation:0};
+ const model={elements:[host,end],wallTopology:{schemaVersion:1,revision:1,joins:[{id:'j1',wallId:'end',otherWallId:'host',endpoint:'end',trim:.1,point:{x:0,y:0}}]}};
+ assert.equal(validateGeometry(model).valid,true);
+ model.wallTopology.joins[0].otherWallId='missing';
+ assert.ok(validateGeometry(model).errors.some(x=>x.includes('relationship references a missing wall')));
+});
