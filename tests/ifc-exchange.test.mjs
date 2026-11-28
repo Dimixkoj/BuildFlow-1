@@ -14,6 +14,9 @@ test('IFC exchange preserves wall connection relationships, IDs, layers and host
  assert.match(ifc,/IFCRELCONNECTSELEMENTS/);
  assert.match(ifc,/IFCRELVOIDSELEMENT/);
  assert.match(ifc,/IFCRELFILLSELEMENT/);
+ const openingRef=ifc.match(/(#\\d+)=IFCOPENINGELEMENT\\(/)?.[1],voidArgs=ifc.match(/=IFCRELVOIDSELEMENT\\(([^;]+)\\)/)?.[1],fillArgs=ifc.match(/=IFCRELFILLSELEMENT\\(([^;]+)\\)/)?.[1];
+ assert.ok(openingRef&&voidArgs?.endsWith(','+openingRef+')'),'void relationship must reference a separate IFC opening element');
+ assert.ok(fillArgs?.includes(openingRef+','),'fill relationship must link the opening to its door/window');
  const imported=importIFC(ifc);
  const host=imported.elements.find(e=>e.id==='host'),door=imported.elements.find(e=>e.id==='door-1');
  assert.ok(host);assert.equal(host.wallRole,'external');assert.equal(host.layers.length,2);
