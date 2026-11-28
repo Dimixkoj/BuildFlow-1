@@ -35,6 +35,7 @@ export function resolveWallJunctionClusters(model,{tolerance=.08}={}){
  const records=(topology.joins||[]).map(j=>({...j,wall:walls.find(w=>w.id===j.wallId),other:walls.find(w=>w.id===j.otherWallId)})).filter(j=>j.wall&&j.other&&!topology.overrides?.some(o=>o.mode==='unjoin'&&((o.wallId===j.wallId&&o.otherWallId===j.otherWallId&&o.endpoint===j.endpoint)||(o.wallId===j.otherWallId&&o.otherWallId===j.wallId))));
  for(let i=0;i<walls.length;i++)for(let j=i+1;j<walls.length;j++){
   const a=walls[i],b=walls[j],hit=centrelineIntersection(a,b);if(!hit)continue;
+  if(topology.overrides?.some(o=>o.mode==='unjoin'&&((o.wallId===a.id&&o.otherWallId===b.id)||(o.wallId===b.id&&o.otherWallId===a.id))))continue;
   const exists=records.some(r=>((r.wallId===a.id&&r.otherWallId===b.id)||(r.wallId===b.id&&r.otherWallId===a.id))&&distance(r.point,hit.point)<=tolerance);
   if(exists)continue;
   const ea=endpointAt(a,hit.point),eb=endpointAt(b,hit.point);
