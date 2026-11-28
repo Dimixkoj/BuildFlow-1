@@ -104,3 +104,25 @@ export function syncHostedOpeningsAfterWallTransform(model,wallId,baselineModel)
  }
  return{ok:true,updated};
 }
+
+
+export function apply3DGroupTransform(model,ids,transform,baselineModel,pivotStart){
+ const selected=new Set(ids||[]),members=(baselineModel?.elements||[]).filter(e=>selected.has(e.id));
+ if(!members.length)return{ok:false,reason:'No objects selected'};
+ const p0=pivotStart||{x:0,y:0,z:0},p1=transform?.position;
+ const rotationY=Number(transform?.rotation?.y)||0,scale=transform?.scale||{x:1,y:1,z:1};
+ if(!p1||![p1.x,p1.y,p1.z,scale.x,scale.y,scale.z,rotationY].every(Number.isFinite)||scale.x<=0||scale.y<=0||scale.z<=0)
+  return{ok:false,reason:'Invalid 3D group transform'};
+ const c=Math.cos(rotationY),s=Math.sin(rotationY),updated=[];
+ for(const base of members){
+  const target=model.elements.find(e=>e.id===base.id);if(!target)continue;
+  const rx=base.x-p0.x,ry=base.z-p0.y,rz=base.y-p0.z;
+  const sx=rx*scale.x,sy=ry*scale.y,sz=rz*scale.z;
+  const tx=sx*c+sz*s,tz=-sx*s+sz*c;
+  target.x=p1.x+tx;target.z=p1.y+sy;target.y=p1.z+tz;
+  target.rotation=((base.rotation||0)-rotationY*180/Math.PI)%360;
+  target.length=base.length*scale.x;target.height=base.height*scale.y;target.width=base.width*scale.z;
+  updated.push(target.id);
+ }
+ return{ok:true,changed:updated.length,updated};
+}
