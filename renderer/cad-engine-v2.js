@@ -4,7 +4,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
 import { computeWallJoinGeometry, wallFootprint, rebuildWallTopology } from './wall-topology.mjs';
-import { normaliseWallLayers, wallPriority } from './wall-junctions.mjs';
+import { normaliseWallLayers, wallPriority, resolveCompoundWallJunction } from './wall-junctions.mjs';
 import { wallJoinCandidates } from './wall-levels.mjs';
 export const defaults={wall:{label:'Wall',length:4,width:.15,height:3},foundation:{label:'Pad footing',length:1.5,width:1.5,height:.45},door:{label:'Door',length:.9,width:.08,height:2.1},window:{label:'Window',length:1.2,width:.08,height:1.2},slab:{label:'Floor slab',length:5,width:4,height:.15},roof:{label:'Roof',length:6,width:5,height:.25},column:{label:'Column',length:.3,width:.3,height:3},beam:{label:'Beam',length:4,width:.25,height:.35},stair:{label:'Stair flight',length:3,width:1.1,height:1.8},furniture:{label:'Furniture',length:1.8,width:.8,height:.75},bed:{label:'Bed',length:2,width:1.6,height:.55},sofa:{label:'Sofa',length:2,width:.85,height:.85},table:{label:'Table',length:1.4,width:.8,height:.75},wardrobe:{label:'Wardrobe',length:1.8,width:.65,height:2.2},light:{label:'Light fixture',length:.45,width:.45,height:.08},cabinet:{label:'Kitchen cabinet',length:1.2,width:.6,height:.9},plumbing:{label:'Plumbing fixture',length:.35,width:.35,height:.4},electrical:{label:'Electrical point',length:.12,width:.12,height:.12},landscape:{label:'Landscape zone',length:4,width:3,height:.05}};
 const id=()=>crypto.randomUUID(),color=n=>({Concrete:0x9ba4ad,Blockwork:0xb9aa98,Timber:0x986d48,'Oak Timber':0xb18453,'Walnut Timber':0x68432f,Glass:0x69c8ee,Steel:0x71869b,Aluminium:0xa9b3ba,'Stainless Steel':0xbac4cc,Tile:0x9c7664,'Ceramic Tile':0xc5c0b6,Porcelain:0xd8d5ce,Marble:0xd5d0c6,Granite:0x777b7c,Brick:0xa65f49,Plaster:0xd8d5ca,Paint:0xe9e6df,'Gypsum Board':0xe2e1dc,Carpet:0x777b83,Asphalt:0x454a4f,Sand:0xc8b184,Soil:0x806348,Waterproofing:0x3d6878,Insulation:0xd8c37b}[n]||0x6ba9a0);
@@ -18,15 +18,9 @@ function hosted(o,w){if(o.hostId)return o.hostId===w.id;const p=offset(o,w);retu
 function wallMesh(w,all,ev,model){
  const layers=normaliseWallLayers(w),total=layers.reduce((s,l)=>s+l.thickness,0),group=new THREE.Group(),joinWalls=wallJoinCandidates(w,all.filter(v=>v.type==='wall'),model);
  const angle=(w.rotation||0)*Math.PI/180,n={x:-Math.sin(angle),y:Math.cos(angle)};
- let layerOffset=-total/2;const layerMeta=[];
+ let layerOffset=-total/2;const layerMeta=[],compound=resolveCompoundWallJunction(w,joinWalls,model?.wallTopology?.overrides||[]);
  for(const layer of layers){
-  const centre=layerOffset+layer.thickness/2,layerWall={...w,width:layer.thickness,x:w.x+n.x*centre,y:w.y+n.y*centre};
-  const layerPeers=joinWalls.filter(v=>v.id!==w.id).map(other=>{
-    const peers=normaliseWallLayers(other),peer=peers.find(l=>l.id===layer.id)||peers.find(l=>l.kind===layer.kind)||peers.find(l=>l.kind==='core')||peers[0];
-    const peerTotal=peers.reduce((s,l)=>s+l.thickness,0),peerIndex=peers.indexOf(peer),peerCentre=-peerTotal/2+peers.slice(0,peerIndex).reduce((s,l)=>s+l.thickness,0)+peer.thickness/2,otherAngle=(other.rotation||0)*Math.PI/180,otherNormal={x:-Math.sin(otherAngle),y:Math.cos(otherAngle)};
-    return{...other,width:peer.thickness,x:other.x+otherNormal.x*peerCentre,y:other.y+otherNormal.y*peerCentre,_layerId:peer.id,_layerKind:peer.kind};
-   });
-   const join=computeWallJoinGeometry(layerWall,layerPeers,model?.wallTopology?.overrides||[]),shape=new THREE.Shape(),z0=-layer.thickness/2,z1=layer.thickness/2;
+  const resolvedLayer=compound.layers.find(x=>x.id===layer.id),centre=resolvedLayer.centreOffset,layerWall=resolvedLayer.wall,layerPeers=resolvedLayer.peers,join=resolvedLayer.geometry,shape=new THREE.Shape(),z0=-layer.thickness/2,z1=layer.thickness/2;
   shape.moveTo(join.startCut[0],-z0);shape.lineTo(join.endCut[0],-z0);shape.lineTo(join.endCut[1],-z1);shape.lineTo(join.startCut[1],-z1);shape.closePath();
   const wallGeometry=new THREE.ExtrudeGeometry(shape,{depth:w.height,bevelEnabled:false,steps:1});wallGeometry.rotateX(-Math.PI/2);wallGeometry.translate(0,-w.height/2,0);
   let base=new Brush(wallGeometry,material({...w,material:layer.material||w.material}));
@@ -50,7 +44,7 @@ function wallMesh(w,all,ev,model){
   const mesh=new THREE.Mesh(base.geometry,material({...w,material:layer.material||w.material}));
   mesh.position.set(0,0,centre);mesh.castShadow=true;mesh.receiveShadow=true;
   mesh.userData={id:w.id,elementId:w.id,wallLayerId:layer.id,wallLayerKind:layer.kind,wallTopology:{schemaVersion:1,joins:join.joins.map(j=>({wallId:j.wallId,endpoint:j.endpoint,otherWallId:j.otherWallId,kind:j.kind}))},join:{startTrim:join.startTrim,endTrim:join.endTrim,joins:join.joins}};
-  group.add(mesh);layerMeta.push({id:layer.id,kind:layer.kind,material:layer.material,thickness:layer.thickness,centreOffset:centre,joinBehaviour:layer.joinBehaviour,wrapAtJunction:layer.wrapAtJunction});layerOffset+=layer.thickness;
+  group.add(mesh);layerMeta.push({id:layer.id,kind:layer.kind,material:layer.material,thickness:layer.thickness,centreOffset:centre,joinBehaviour:layer.joinBehaviour,wrapAtJunction:layer.wrapAtJunction,termination:resolvedLayer.termination,miter:resolvedLayer.miter});layerOffset+=layer.thickness;
  }
  group.position.set(w.x,w.z+w.height/2,w.y);group.rotation.y=-(w.rotation||0)*Math.PI/180;group.userData={id:w.id,elementId:w.id,wallTopology:{schemaVersion:1},compoundWall:{totalThickness:total,layers:layerMeta}};
  return group;
