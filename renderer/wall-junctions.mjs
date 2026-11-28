@@ -41,7 +41,10 @@ export function resolveWallJunctionClusters(model,{tolerance=.08}={}){
  }
  return groups.map(g=>{
   const byWall=new Map();
-  for(const r of g.records){const key=stable(r.wallId,r.endpoint);if(!byWall.has(key))byWall.set(key,{wall:r.wall,endpoint:r.endpoint,relationships:[]});byWall.get(key).relationships.push(r)}
+  for(const r of g.records){
+   const key=stable(r.wallId,r.endpoint);if(!byWall.has(key))byWall.set(key,{wall:r.wall,endpoint:r.endpoint,relationships:[]});byWall.get(key).relationships.push(r);
+   const targetKey=stable(r.otherWallId,'face');if(!byWall.has(targetKey))byWall.set(targetKey,{wall:r.other,endpoint:'face',relationships:[]});byWall.get(targetKey).relationships.push(r);
+  }
   const members=[...byWall.values()];
   const uniqueWalls=[...new Map(members.map(m=>[m.wall.id,m.wall])).values()];
   if(uniqueWalls.length<2)return null;
