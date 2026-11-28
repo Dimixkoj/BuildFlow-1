@@ -59,3 +59,11 @@ test('keeps a persistent relationship when the wall endpoint already meets the h
  assert.ok(join);assert.ok(join.trim<1e-8);
  const geometry=computeWallJoinGeometry(end,[host,end]);assert.ok(geometry.endTrim<1e-8);
 });
+
+test('higher-priority wall continues through a corner and lower-priority wall trims',()=>{
+ const primary=wall('primary',-2,0,4,0,.2),secondary=wall('secondary',0,2,4,90,.2);
+ primary.joinPriority=100;secondary.joinPriority=10;
+ const a=computeWallJoinGeometry(primary,[primary,secondary]);
+ const b=computeWallJoinGeometry(secondary,[primary,secondary]);
+ assert.equal(a.endTrim,0);assert.ok(b.startTrim>0);
+});
