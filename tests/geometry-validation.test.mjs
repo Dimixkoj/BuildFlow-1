@@ -17,3 +17,10 @@ test('validates persistent wall join references against model walls',()=>{
  model.wallTopology.joins[0].otherWallId='missing';
  assert.ok(validateGeometry(model).errors.some(x=>x.includes('relationship references a missing wall')));
 });
+
+test('rejects compound wall layers whose thickness does not match wall width',()=>{
+ const layered={...wall,layers:[{id:'core',kind:'core',thickness:.1},{id:'finish',kind:'finish',thickness:.05}]};
+ const r=validateGeometry({elements:[layered]});
+ assert.equal(r.valid,false);
+ assert.ok(r.errors.some(x=>x.includes('layer thickness total must match wall width')));
+});
