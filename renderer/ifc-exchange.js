@@ -1,7 +1,6 @@
 import { rebuildWallTopology } from './wall-topology.mjs';
 import { resolveRoomBoundaries } from './room-boundaries.mjs';
 import { resolveWallJunctionClusters } from './wall-junctions.mjs';
-import { resolveRoomBoundaries } from './room-boundaries.mjs';
 const q=s=>"'"+String(s??'').replace(/'/g,"''").replace(/[\r\n]/g,' ')+"'";
 export function exportIFC(model){
  if(model&&Array.isArray(model.elements)){rebuildWallTopology(model);model.wallTopology.clusters=resolveWallJunctionClusters(model)}
