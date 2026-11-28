@@ -1,13 +1,19 @@
+import { wallMetrics } from './wall-topology.mjs';
 export function quantityLinesFor(e,elements=[]){
- const t=e.type,L=Math.max(0,+e.length||0),W=Math.max(0,+e.width||0),H=Math.max(0,+e.height||0),net0=L*H;
- const openings=elements.filter(o=>['door','window'].includes(o.type)&&o.hostId===e.id).reduce((n,o)=>n+(+o.length||0)*(+o.height||0),0),net=Math.max(0,net0-openings),per=2*(L+W),a=[];
+ const t=e.type,L=Math.max(0,+e.length||0),W=Math.max(0,+e.width||0),H=Math.max(0,+e.height||0),per=2*(L+W),a=[];
+ const hostedOpenings=elements.filter(o=>['door','window'].includes(o.type)&&o.hostId===e.id);
+ const openings=hostedOpenings.reduce((n,o)=>n+(+o.length||0)*(+o.height||0),0);
+ const wallGeometry=t==='wall'?wallMetrics(e,elements):null;
+ const measuredLength=wallGeometry?.effectiveLength??L;
+ const grossWallArea=measuredLength*H;
+ const net=Math.max(0,(t==='wall'?grossWallArea:L*H)-openings);
  const add=(code,label,unit,qty,basis)=>{if(Number.isFinite(qty)&&qty>=0)a.push({measureCode:code,label,unit,qty,measurementBasis:basis})};
  if(t==='wall'){
-  add('wall_area','Blockwork / wall construction area','m²',net,'Wall length × height less hosted door and window openings');
+  add('wall_area','Blockwork / wall construction area','m²',net,'Topology-adjusted wall centreline length × height less hosted door and window openings');
   add('wall_blocks','Standard block units (450 × 225 mm face)','No.',Math.ceil(net/(.45*.225)*1.05),'Net wall area ÷ 0.10125 m² × 1.05 allowance; verify block type and bond');
-  add('wall_volume','Wall core volume','m³',net*W,'Net wall area × modelled wall thickness');
-  add('wall_plaster','Cement-sand plaster, both faces','m²',net*2,'Net wall area × 2 faces; edit if only one face is plastered');
-  add('wall_paint','Wall paint coverage, both faces','m²',net*2,'Net wall area × 2 faces; paint coat count and coverage depend on specification');
+  add('wall_volume','Wall core volume','m³',Math.max(0,(wallGeometry?.planArea??L*W)*H-openings*W),'Resolved wall footprint area × height less hosted opening volume; junction overlaps are removed by the wall topology');
+  add('wall_plaster','Cement-sand plaster, both faces','m²',net*2,'Topology-adjusted wall face area less hosted openings; edit if only one face is plastered');
+  add('wall_paint','Wall paint coverage, both faces','m²',net*2,'Topology-adjusted wall face area less hosted openings; paint coat count and coverage depend on specification');
  }else if(t==='slab'){
   add('slab_concrete','In-situ slab concrete','m³',L*W*H,'Length × width × modelled slab thickness');
   add('slab_formwork','Soffit formwork','m²',L*W,'Length × width; omit where cast on permanent support');
