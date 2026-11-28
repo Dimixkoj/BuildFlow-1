@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {resolveWallJunctionClusters,wallPriority,setJunctionContinuation,normaliseWallLayers,resolveCompoundWallJoin,compoundWallMetrics,setWallJoinOverride} from '../renderer/wall-junctions.mjs';
+import {resolveWallJunctionClusters,wallPriority,setJunctionContinuation,normaliseWallLayers,resolveCompoundWallJoin,compoundWallMetrics,setWallJoinOverride,resolveCompoundWallJunction} from '../renderer/wall-junctions.mjs';
 const wall=(id,x,y,length=4,rotation=0,width=.3,extra={})=>({id,type:'wall',x,y,z:0,length,width,height:3,rotation,...extra});
 
 test('groups three-wall endpoint relationships into one shared junction cluster',()=>{
@@ -69,4 +69,14 @@ test('groups four through-wall intersections into one multiway junction',()=>{
  assert.equal(node.kind,'multiway');
  assert.equal(node.wallIds.length,4);
  assert.ok(node.members.every(m=>m.endpoint==='interior'));
+});
+
+test('compound junction solver computes each wall layer against its matching neighbour layer',()=>{
+ const layers=[{id:'core',kind:'core',material:'Block',thickness:.2,wrapAtJunction:false},{id:'finish',kind:'finish',material:'Render',thickness:.05,wrapAtJunction:true}];
+ const a=wall('a',-2,0,4,0,.25,{layers}),b=wall('b',0,2,4,90,.25,{layers});
+ const resolved=resolveCompoundWallJunction(a,[b]);
+ assert.equal(resolved.layers.length,2);
+ assert.equal(resolved.layers.find(x=>x.id==='core').termination,'core-miter');
+ assert.equal(resolved.layers.find(x=>x.id==='finish').termination,'finish-wrap');
+ assert.ok(resolved.layers.every(x=>Array.isArray(x.miter.start)&&Array.isArray(x.miter.end)));
 });
