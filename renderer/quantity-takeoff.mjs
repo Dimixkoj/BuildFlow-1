@@ -1,9 +1,10 @@
+import { wallJoinCandidates } from './wall-levels.mjs';
 import { wallMetrics } from './wall-topology.mjs';
-export function quantityLinesFor(e,elements=[],overrides=[]){
+export function quantityLinesFor(e,elements=[],overrides=[],model={elements}){
  const t=e.type,L=Math.max(0,+e.length||0),W=Math.max(0,+e.width||0),H=Math.max(0,+e.height||0),per=2*(L+W),a=[];
  const hostedOpenings=elements.filter(o=>['door','window'].includes(o.type)&&o.hostId===e.id);
  const openings=hostedOpenings.reduce((n,o)=>n+(+o.length||0)*(+o.height||0),0);
- const wallGeometry=t==='wall'?wallMetrics(e,elements,overrides):null;
+ const wallGeometry=t==='wall'?wallMetrics(e,wallJoinCandidates(e,elements,model),overrides):null;
  const measuredLength=wallGeometry?.effectiveLength??L;
  const grossWallArea=measuredLength*H;
  const net=Math.max(0,(t==='wall'?grossWallArea:L*H)-openings);
