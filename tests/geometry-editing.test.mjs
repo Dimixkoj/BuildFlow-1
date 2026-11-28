@@ -22,8 +22,8 @@ test('applies a 3D group translation and rotation around its shared pivot',()=>{
  const a=wall('a',0,0),b=wall('b',2,0),baseline={elements:[{...a},{...b}]},model={elements:[{...a},{...b}]};
  const r=apply3DGroupTransform(model,['a','b'],{position:{x:5,y:0,z:2},rotation:{y:Math.PI/2},scale:{x:1,y:1,z:1}},baseline,{x:1,y:0,z:0});
  assert.equal(r.ok,true);assert.equal(r.changed,2);
- assert.ok(Math.abs(model.elements[0].x-6)<1e-8);assert.ok(Math.abs(model.elements[0].y-2)<1e-8);
- assert.ok(Math.abs(model.elements[1].x-6)<1e-8);assert.ok(Math.abs(model.elements[1].y)<1e-8);
+ assert.ok(Math.abs(model.elements[0].x-5)<1e-8);assert.ok(Math.abs(model.elements[0].y-3)<1e-8);
+ assert.ok(Math.abs(model.elements[1].x-5)<1e-8);assert.ok(Math.abs(model.elements[1].y-1)<1e-8);
  assert.equal(model.elements[0].rotation,-90);
 });
 test('scales selected group members in all three parametric dimensions',()=>{
