@@ -5,6 +5,7 @@ const cross=(a,b)=>a.x*b.y-a.y*b.x;
 const frame=w=>{const a=rad(w.rotation),u={x:Math.cos(a),y:Math.sin(a)};return{u,n:{x:-u.y,y:u.x}}};
 const point=(w,u,s)=>({x:w.x+u.x*s,y:w.y+u.y*s});
 const area=pts=>Math.abs(pts.reduce((sum,p,i)=>{const q=pts[(i+1)%pts.length];return sum+p.x*q.y-q.x*p.y},0)/2);
+const wallPriority=w=>{const explicit=Number(w?.joinPriority??w?.wallTypePriority);if(Number.isFinite(explicit))return explicit;const role=String(w?.wallRole||w?.function||'').toLowerCase();return role==='primary'||role==='structural'||role==='spine'?300:role==='external'||role==='perimeter'?200:role==='partition'||role==='internal'?100:0};
 
 /**
  * Find endpoint-to-face relationships between two finite wall centrelines.
@@ -50,6 +51,7 @@ export function computeWallJoinGeometry(wall,walls=[]){
   if(other?.type!=='wall'||other.id===wall.id)continue;
   for(const [name,sign] of [['start',-1],['end',1]]){
    const hit=endpointHit(wall,other,sign);if(!hit)continue;
+   if(hit.kind==='corner'&&wallPriority(wall)>wallPriority(other))continue;
    const target=cuts[name];
    for(let i=0;i<2;i++)target[i]=sign<0?Math.max(target[i],hit.sideCuts[i]):Math.min(target[i],hit.sideCuts[i]);
    joins.push(hit);
