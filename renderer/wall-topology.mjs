@@ -1,3 +1,4 @@
+import { wallJoinCandidates } from './wall-levels.mjs';
 const EPS=1e-8;
 const rad=d=>(Number(d)||0)*Math.PI/180;
 const dot=(a,b)=>a.x*b.x+a.y*b.y;
@@ -88,7 +89,8 @@ export function rebuildWallTopology(model){
  for(const wall of walls){
   for(const other of walls){
    if(wall.id===other.id)continue;
-   const g=computeWallJoinGeometry(wall,[other]);
+   if(!wallJoinCandidates(wall,[other],model).length)continue;
+    const g=computeWallJoinGeometry(wall,[other]);
    for(const j of g.joins){
     const key=[j.wallId,j.endpoint,j.otherWallId].join('|');
     joins.push({id:'wall-join:'+key,wallId:j.wallId,endpoint:j.endpoint,otherWallId:j.otherWallId,kind:j.kind,mode:'auto',point:j.point,angleDeg:j.angleDeg,trim:j.trim});
