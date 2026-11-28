@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {snapGeometryPoint,transformSelection,rotateSelection,resizeElement,alignSelection,offsetElement,trimExtendElement,apply3DTransform,apply3DGroupTransform,constrainHostedOpening,syncHostedOpeningsAfterWallTransform} from '../renderer/geometry-editing.mjs';
+import {snapGeometryPoint,transformSelection,rotateSelection,resizeElement,alignSelection,offsetElement,trimExtendElement,apply3DTransform,apply3DGroupTransform,attachOpeningToWall,constrainHostedOpening,syncHostedOpeningsAfterWallTransform} from '../renderer/geometry-editing.mjs';
 const wall=(id,x,y,length=4,rotation=0)=>({id,type:'wall',x,y,z:0,length,width:.2,height:3,rotation});
 test('snaps to grid and nearby geometry points',()=>{const p=snapGeometryPoint(1.01,.99,[wall('w',2,1)],.2,true,.2);assert.ok(Number.isFinite(p.x)&&Number.isFinite(p.y));assert.equal(snapGeometryPoint(1.01,.99,[],.2,false).x,1.01)});
 test('moves a selected wall and hosted opening together',()=>{const w=wall('w',0,0),d={id:'d',type:'door',hostId:'w',x:0,y:0};const m={elements:[w,d,wall('other',4,0)]};const r=transformSelection(m,['w'],1,2);assert.equal(r.ok,true);assert.equal(w.x,1);assert.equal(d.y,2)});
@@ -30,4 +30,15 @@ test('scales selected group members in all three parametric dimensions',()=>{
  const a=wall('a',0,0),baseline={elements:[{...a}]},model={elements:[{...a}]};
  const r=apply3DGroupTransform(model,['a'],{position:{x:0,y:0,z:0},rotation:{y:0},scale:{x:2,y:3,z:.5}},baseline,{x:0,y:0,z:0});
  assert.equal(r.ok,true);assert.equal(model.elements[0].length,8);assert.equal(model.elements[0].height,9);assert.equal(model.elements[0].width,.1);
+});
+
+test('attaches an opening to a wall centreline and clamps it inside the wall',()=>{
+ const w=wall('host',0,0,4,90),d={id:'door',type:'door',hostId:null,x:0.4,y:9,z:-1,length:1,width:.08,height:2,rotation:0},model={elements:[w,d]};
+ const r=attachOpeningToWall(model,'door');
+ assert.equal(r.ok,true);assert.equal(d.hostId,'host');assert.equal(d.rotation,90);
+ assert.ok(Math.abs(d.x)<1e-8);assert.ok(Math.abs(d.y-1.5)<1e-8);assert.equal(d.z,0);
+});
+test('rejects an opening that cannot fit its selected host wall',()=>{
+ const w=wall('short',0,0,1),d={id:'window',type:'window',x:0,y:0,z:0,length:1.2,width:.08,height:1,rotation:0},model={elements:[w,d]};
+ const r=attachOpeningToWall(model,'window','short');assert.equal(r.ok,false);assert.match(r.reason,/larger than its host wall/);
 });
