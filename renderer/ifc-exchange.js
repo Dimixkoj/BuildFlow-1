@@ -1,9 +1,10 @@
 import { rebuildWallTopology } from './wall-topology.mjs';
 import { resolveRoomBoundaries } from './room-boundaries.mjs';
+import { resolveWallJunctionClusters } from './wall-junctions.mjs';
 import { resolveRoomBoundaries } from './room-boundaries.mjs';
 const q=s=>"'"+String(s??'').replace(/'/g,"''").replace(/[\r\n]/g,' ')+"'";
 export function exportIFC(model){
- if(model&&Array.isArray(model.elements))rebuildWallTopology(model);
+ if(model&&Array.isArray(model.elements)){rebuildWallTopology(model);model.wallTopology.clusters=resolveWallJunctionClusters(model)}
  let n=0,rows=[];const add=s=>{const r='#'+(++n);rows.push(r+'='+s+';');return r},guid=i=>String(i).padStart(22,'0'),pt=(x,y,z)=>add('IFCCARTESIANPOINT(('+[x,y,z].map(v=>(+v||0).toFixed(5)).join(',')+'))'),dir=(x,y,z)=>add('IFCDIRECTION(('+[x,y,z].join(',')+'))'),axis=(p,a,r)=>add('IFCAXIS2PLACEMENT3D('+p+','+a+','+r+')');
  const org=add('IFCORGANIZATION($,'+q('Dimixkoj Enterprises')+',$,$,$)'),person=add('IFCPERSON($,$,'+q('ConFlow User')+',$,$,$,$,$)'),po=add('IFCPERSONANDORGANIZATION('+person+','+org+',$)'),app=add('IFCAPPLICATION('+org+','+q('1.0')+','+q('ConFlow 1')+','+q('CONFLOW')+')'),oh=add('IFCOWNERHISTORY('+po+','+app+',$,.ADDED.,$,$,$,0)');
  const origin=pt(0,0,0),zdir=dir(0,0,1),xdir=dir(1,0,0),world=axis(origin,zdir,xdir),ctx=add("IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.E-5,"+world+",$)"),u1=add('IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.)'),u2=add('IFCSIUNIT(*,.AREAUNIT.,$,.SQUARE_METRE.)'),u3=add('IFCSIUNIT(*,.VOLUMEUNIT.,$,.CUBIC_METRE.)'),units=add('IFCUNITASSIGNMENT(('+[u1,u2,u3].join(',')+'))');
