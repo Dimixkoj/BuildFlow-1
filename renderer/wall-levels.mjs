@@ -22,7 +22,7 @@ export function wallsShareVerticalExtent(a,b,model,tolerance=EPS){
 }
 export function traceWallsAcrossLevels(model,{planTolerance=.12,angleTolerance=3,layerTolerance=.01}={}){
  const walls=(model?.elements||[]).filter(e=>e?.type==='wall'),levels=normaliseBuildingLevels(model),traces=[];
- const layerSignature=w=>(w.layers||[]).map(l=>[l.id||'',l.kind||'',l.material||'',Number(l.thickness)||0].join(':')).join('|');
+ const layerSignature=w=>(w.layers||[]).map(l=>[l.id||'',l.kind||'',l.material||'',Number(l.thickness)||0,l.joinBehaviour||'miter',l.wrapAtJunction!==false,l.priority||0].join(':')).join('|');
  for(let i=0;i<walls.length;i++)for(let j=i+1;j<walls.length;j++){
   const a=walls[i],b=walls[j],A=wallVerticalSpan(a,model),B=wallVerticalSpan(b,model);
   if(Math.abs(A.baseElevation-B.baseElevation)<EPS&&A.baseLevelId===B.baseLevelId)continue;
@@ -36,7 +36,7 @@ export function traceWallsAcrossLevels(model,{planTolerance=.12,angleTolerance=3
   if(!adjacent)continue;
   const sameLayers=layerSignature(a)===layerSignature(b),layerChanges=[];
   const aa=a.layers||[],bb=b.layers||[];
-  if(!sameLayers){const ids=new Set([...aa,...bb].map(l=>l.id||l.kind||l.material));for(const id of ids){const x=aa.find(l=>(l.id||l.kind||l.material)===id),y=bb.find(l=>(l.id||l.kind||l.material)===id);if(!x||!y||Math.abs((+x.thickness||0)-(+y.thickness||0))>layerTolerance||x.material!==y.material)layerChanges.push({key:id,from:x?{material:x.material,thickness:x.thickness}:null,to:y?{material:y.material,thickness:y.thickness}:null})}}
+  if(!sameLayers){const ids=new Set([...aa,...bb].map(l=>l.id||l.kind||l.material));for(const id of ids){const x=aa.find(l=>(l.id||l.kind||l.material)===id),y=bb.find(l=>(l.id||l.kind||l.material)===id);if(!x||!y||Math.abs((+x.thickness||0)-(+y.thickness||0))>layerTolerance||x.material!==y.material||x.joinBehaviour!==y.joinBehaviour||x.wrapAtJunction!==y.wrapAtJunction||x.priority!==y.priority)layerChanges.push({key:id,from:x?{kind:x.kind,material:x.material,thickness:x.thickness,joinBehaviour:x.joinBehaviour||'miter',wrapAtJunction:x.wrapAtJunction!==false,priority:x.priority||0}:null,to:y?{kind:y.kind,material:y.material,thickness:y.thickness,joinBehaviour:y.joinBehaviour||'miter',wrapAtJunction:y.wrapAtJunction!==false,priority:y.priority||0}:null})}}
   const lower=A.baseElevation<=B.baseElevation?a:b,upper=lower===a?b:a,ls=lower===a?A:B,us=lower===a?B:A;
   traces.push({id:'wall-trace:'+lower.id+':'+upper.id,lowerWallId:lower.id,upperWallId:upper.id,lowerLevelId:ls.baseLevelId,upperLevelId:us.baseLevelId,planOffset:offset,angleDifference:angle,overlapLength:overlap,point:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},verticalGap:us.baseElevation-ls.topElevation,continuity:Math.abs(us.baseElevation-ls.topElevation)<=planTolerance?'continuous':'stepped-or-offset',layerContinuity:sameLayers?'matching':'changed',layerChanges,source:'level-aware-wall-trace'});
  }
