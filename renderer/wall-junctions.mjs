@@ -23,7 +23,7 @@ export function wallPriority(wall){
 export function resolveWallJunctionClusters(model,{tolerance=.08}={}){
  if(!model||!Array.isArray(model.elements))return[];
  const topology=rebuildWallTopology(model),walls=model.elements.filter(e=>e?.type==='wall');
- const records=(topology.joins||[]).map(j=>({...j,wall:walls.find(w=>w.id===j.wallId),other:walls.find(w=>w.id===j.otherWallId)})).filter(j=>j.wall&&j.other);
+ const records=(topology.joins||[]).map(j=>({...j,wall:walls.find(w=>w.id===j.wallId),other:walls.find(w=>w.id===j.otherWallId)})).filter(j=>j.wall&&j.other&&!topology.overrides?.some(o=>o.wallId===j.wallId&&o.otherWallId===j.otherWallId&&o.endpoint===j.endpoint&&o.mode==='unjoin'));
  const groups=[];
  for(const record of records){
   let group=groups.find(g=>distance(g.anchor,record.point)<=tolerance);
