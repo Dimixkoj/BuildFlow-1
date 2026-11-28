@@ -128,6 +128,22 @@ export function resolveCompoundWallJoin(wall,clusterMember){
  return{wallId:wall.id,totalThickness:total,endpoint,layerGeometry,endpointCentre:point(wall,s),normal:n,direction:u};
 }
 
+export function resolveCompoundWallJunction(wall,otherWalls=[],overrides=[]){
+ const layers=normaliseWallLayers(wall),total=layers.reduce((s,l)=>s+l.thickness,0),width=Number(wall.width)||total;
+ if(Math.abs(total-width)>.002)throw new Error('Wall layer thickness total ('+total.toFixed(3)+' m) does not match wall width ('+width.toFixed(3)+' m)');
+ const angle=rad(wall.rotation),normalVector={x:-Math.sin(angle),y:Math.cos(angle)};let offset=-total/2;
+ const resolved=layers.map(layer=>{
+  const centre=offset+layer.thickness/2,layerWall={...wall,width:layer.thickness,x:wall.x+normalVector.x*centre,y:wall.y+normalVector.y*centre};
+  const peers=(otherWalls||[]).filter(other=>other.type==='wall'&&other.id!==wall.id).map(other=>{
+   const stack=normaliseWallLayers(other),match=stack.find(l=>l.id===layer.id)||stack.find(l=>l.kind===layer.kind)||stack.find(l=>l.kind==='core')||stack[0],peerIndex=stack.indexOf(match),peerTotal=stack.reduce((s,l)=>s+l.thickness,0),peerCentre=-peerTotal/2+stack.slice(0,peerIndex).reduce((s,l)=>s+l.thickness,0)+match.thickness/2,a=rad(other.rotation),n={x:-Math.sin(a),y:Math.cos(a)};
+   return{...other,width:match.thickness,x:other.x+n.x*peerCentre,y:other.y+n.y*peerCentre,matchedLayerId:match.id,matchedLayerKind:match.kind};
+  });
+  const geometry=computeWallJoinGeometry(layerWall,peers,overrides);
+  offset+=layer.thickness;
+  return{...layer,centreOffset:centre,wall:layerWall,peers,geometry,termination:layer.kind==='core'?'core-miter':layer.wrapAtJunction?'finish-wrap':'finish-butt',miter:{start:geometry.startCut,end:geometry.endCut}};
+ });
+ return{wallId:wall.id,totalThickness:total,layers:resolved};
+}
 export function compoundWallMetrics(wall){
  const layers=normaliseWallLayers(wall),totalThickness=layers.reduce((s,l)=>s+l.thickness,0);
  return{layerCount:layers.length,totalThickness,thicknessMatchesWidth:Math.abs(totalThickness-(Number(wall.width)||totalThickness))<=.002,coreLayers:layers.filter(l=>l.kind==='core').length,finishLayers:layers.filter(l=>l.kind==='finish').length,insulationLayers:layers.filter(l=>l.kind==='insulation').length};
