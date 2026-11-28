@@ -52,3 +52,10 @@ test('topology summary reports resolved relationship types',()=>{
  rebuildWallTopology(model);const summary=wallTopologySummary(model);
  assert.equal(summary.joinCount,1);assert.equal(summary.teeCount,1);
 });
+
+test('keeps a persistent relationship when the wall endpoint already meets the host face',()=>{
+ const host=wall('host',0,0,4,90),end=wall('end',-2.1,0,4,0),model={elements:[host,end]};
+ const topology=rebuildWallTopology(model),join=topology.joins.find(j=>j.wallId==='end'&&j.otherWallId==='host');
+ assert.ok(join);assert.ok(join.trim<1e-8);
+ const geometry=computeWallJoinGeometry(end,[host,end]);assert.ok(geometry.endTrim<1e-8);
+});
