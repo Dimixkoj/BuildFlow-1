@@ -17,9 +17,9 @@ function hosted(o,w){if(o.hostId)return o.hostId===w.id;const p=offset(o,w);retu
 function wallMesh(w,all,ev){
  const layers=normaliseWallLayers(w),total=layers.reduce((s,l)=>s+l.thickness,0),group=new THREE.Group();
  const angle=(w.rotation||0)*Math.PI/180,n={x:-Math.sin(angle),y:Math.cos(angle)};
- let offset=-total/2;const layerMeta=[];
+ let layerOffset=-total/2;const layerMeta=[];
  for(const layer of layers){
-  const centre=offset+layer.thickness/2,layerWall={...w,width:layer.thickness,x:w.x+n.x*centre,y:w.y+n.y*centre};
+  const centre=layerOffset+layer.thickness/2,layerWall={...w,width:layer.thickness,x:w.x+n.x*centre,y:w.y+n.y*centre};
   const join=computeWallJoinGeometry(layerWall,all),shape=new THREE.Shape(),z0=-layer.thickness/2,z1=layer.thickness/2;
   shape.moveTo(join.startCut[0],-z0);shape.lineTo(join.endCut[0],-z0);shape.lineTo(join.endCut[1],-z1);shape.lineTo(join.startCut[1],-z1);shape.closePath();
   const wallGeometry=new THREE.ExtrudeGeometry(shape,{depth:w.height,bevelEnabled:false,steps:1});wallGeometry.rotateX(-Math.PI/2);wallGeometry.translate(0,-w.height/2,0);
@@ -33,7 +33,7 @@ function wallMesh(w,all,ev){
   const mesh=new THREE.Mesh(base.geometry,material({...w,material:layer.material||w.material}));
   mesh.position.set(0,0,centre);mesh.castShadow=true;mesh.receiveShadow=true;
   mesh.userData={id:w.id,elementId:w.id,wallLayerId:layer.id,wallLayerKind:layer.kind,wallTopology:{schemaVersion:1,joins:join.joins.map(j=>({wallId:j.wallId,endpoint:j.endpoint,otherWallId:j.otherWallId,kind:j.kind}))},join:{startTrim:join.startTrim,endTrim:join.endTrim,joins:join.joins}};
-  group.add(mesh);layerMeta.push({id:layer.id,kind:layer.kind,material:layer.material,thickness:layer.thickness,centreOffset:centre,joinBehaviour:layer.joinBehaviour,wrapAtJunction:layer.wrapAtJunction});offset+=layer.thickness;
+  group.add(mesh);layerMeta.push({id:layer.id,kind:layer.kind,material:layer.material,thickness:layer.thickness,centreOffset:centre,joinBehaviour:layer.joinBehaviour,wrapAtJunction:layer.wrapAtJunction});layerOffset+=layer.thickness;
  }
  group.position.set(w.x,w.z+w.height/2,w.y);group.rotation.y=-(w.rotation||0)*Math.PI/180;group.userData={id:w.id,elementId:w.id,wallTopology:{schemaVersion:1},compoundWall:{totalThickness:total,layers:layerMeta}};
  return group;
