@@ -41,7 +41,7 @@ export function resolveRoomBoundaries(model,{minimumArea=.25,tolerance=.015,leve
  return [...grouped.entries()].flatMap(([id,walls])=>resolveRoomBoundariesForWalls(model,walls,{minimumArea,tolerance,levelId:id})).concat(resolveManualRoomSpaces(model,levelId));
 }
 function resolveRoomBoundariesForWalls(model,walls,{minimumArea,tolerance,levelId}){
- if(walls.length<3)return[];
+ if(walls.length<3&&!walls.some(w=>(w.curve||w.arc)?.type==='arc'))return[];
  rebuildWallTopology(model);
  const segments=walls.flatMap(wallSegments),cuts=segments.map(s=>[{t:0,point:s.a},{t:1,point:s.b}]);
  for(let i=0;i<segments.length;i++)for(let j=i+1;j<segments.length;j++){
