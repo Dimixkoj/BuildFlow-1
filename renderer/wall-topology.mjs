@@ -33,7 +33,7 @@ function endpointHit(wall,other,sign,tolerance=.18){
  });
  const inwardTrims=sideCuts.map(s=>sign<0?s+halfA:halfA-s);
  if(inwardTrims.some(t=>t<=1e-5||t>Math.max(wall.width,other.width)*3+.1))return null;
- const intersection=point(wall,A.u,alongA);
+ const intersection=point({...wall,x:Number(wall.x)||0,y:Number(wall.y)||0},A.u,alongA);
  const otherAtEnd=Math.abs(Math.abs(alongB)-halfB)<=other.width/2+tol;
  return{
   wallId:wall.id,endpoint:sign<0?'start':'end',otherWallId:other.id,
@@ -64,7 +64,7 @@ export function computeWallJoinGeometry(wall,walls=[]){
 export function wallFootprint(wall,walls=[]){
  const g=computeWallJoinGeometry(wall,walls),{u,n}=frame(wall),h=wall.width/2;
  const local=[[g.startCut[0],h],[g.endCut[0],h],[g.endCut[1],-h],[g.startCut[1],-h]];
- return local.map(([s,side])=>({x:wall.x+u.x*s+n.x*side,y:wall.y+u.y*s+n.y*side}));
+ const cx=Number(wall.x)||0,cy=Number(wall.y)||0;return local.map(([s,side])=>({x:cx+u.x*s+n.x*side,y:cy+u.y*s+n.y*side}));
 }
 
 export function wallMetrics(wall,walls=[]){
