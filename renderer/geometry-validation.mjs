@@ -13,6 +13,12 @@ export function validateGeometry(model){
   for(const k of ['x','y','z','length','width','height','rotation'])if(!finite(e[k]))errors.push(tag+': '+k+' must be a finite number');
   for(const k of ['length','width','height'])if(finite(e[k])&&e[k]<=EPS)errors.push(tag+': '+k+' must be greater than zero');
   if(finite(e.rotation)&&Math.abs(e.rotation)>36000)errors.push(tag+': rotation is outside the supported range');
+  if(e.type==='wall'&&Array.isArray(e.layers)&&e.layers.length){
+   const layerThickness=e.layers.map(layer=>Number(layer?.thickness));
+   if(layerThickness.some(v=>!Number.isFinite(v)||v<=EPS))errors.push(tag+': compound wall layers require positive finite thicknesses');
+   else if(Math.abs(layerThickness.reduce((s,v)=>s+v,0)-e.width)>.002)errors.push(tag+': compound wall layer thickness total must match wall width');
+   if(e.joinPriority!==undefined&&!Number.isFinite(Number(e.joinPriority)))errors.push(tag+': wall join priority must be finite');
+  }
   if(e.type==='roof'){if(!['flat','gable','hip','skillion'].includes(e.roofStyle||'gable'))errors.push(tag+': unsupported roof profile');const pitch=Number(e.pitch??30);if(!Number.isFinite(pitch)||pitch<0||pitch>60)errors.push(tag+': roof pitch must be between 0° and 60°')}
   if(['door','window'].includes(e.type)){if(e.height>3.5)warnings.push(tag+': unusually tall opening; verify the design');if(e.hostId&&!items.some(w=>w.id===e.hostId&&w.type==='wall'))errors.push(tag+': host wall reference is missing')}
  }
