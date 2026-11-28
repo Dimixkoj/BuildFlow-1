@@ -43,8 +43,8 @@ test('IFC roundtrip exports room spaces with storey and wall-boundary relationsh
  const boundary=[{x:0,y:0},{x:4,y:0},{x:4,y:3},{x:0,y:3}];
  const model={title:'Space exchange',levels:[{id:'L0',name:'Ground',elevation:0,height:3}],elements:[{id:'w1',type:'wall',x:2,y:0,length:4,width:.2,height:3,z:0,rotation:0,baseLevelId:'L0'}],roomSpaces:[{id:'manual-space',label:'Meeting room',levelId:'L0',boundary,wallIds:['w1'],areaOverride:12,height:3}]};
  const ifc=exportIFC(model);
- assert.match(ifc,/IFCSPACE\\(/);
- assert.match(ifc,/IFCRELSPACEBOUNDARY\\(/);
+ assert.ok(ifc.includes('IFCSPACE('));
+ assert.ok(ifc.includes('IFCRELSPACEBOUNDARY('));
  const imported=importIFC(ifc),room=imported.roomSpaces.find(x=>x.id==='manual-space');
  assert.ok(room);
  assert.equal(room.levelId,imported.levels[0].id);
