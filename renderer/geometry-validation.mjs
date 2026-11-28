@@ -16,6 +16,16 @@ export function validateGeometry(model){
   if(e.type==='roof'){if(!['flat','gable','hip','skillion'].includes(e.roofStyle||'gable'))errors.push(tag+': unsupported roof profile');const pitch=Number(e.pitch??30);if(!Number.isFinite(pitch)||pitch<0||pitch>60)errors.push(tag+': roof pitch must be between 0° and 60°')}
   if(['door','window'].includes(e.type)){if(e.height>3.5)warnings.push(tag+': unusually tall opening; verify the design');if(e.hostId&&!items.some(w=>w.id===e.hostId&&w.type==='wall'))errors.push(tag+': host wall reference is missing')}
  }
+ const topology=model?.wallTopology;
+ if(topology&&Array.isArray(topology.joins)){
+  for(const join of topology.joins){
+   const source=items.find(x=>x.id===join.wallId&&x.type==='wall'),target=items.find(x=>x.id===join.otherWallId&&x.type==='wall');
+   if(!source||!target)errors.push('Wall join '+String(join.id||'')+': relationship references a missing wall');
+   if(!['start','end'].includes(join.endpoint))errors.push('Wall join '+String(join.id||'')+': invalid endpoint reference');
+   if(!Number.isFinite(join.trim)||join.trim<0)errors.push('Wall join '+String(join.id||'')+': invalid trim geometry');
+   if(!join.point||!finite(join.point.x)||!finite(join.point.y))errors.push('Wall join '+String(join.id||'')+': invalid intersection point');
+  }
+ }
  for(const e of items.filter(x=>x&&['door','window'].includes(x.type)&&x.hostId)){
   const w=items.find(x=>x.id===e.hostId);if(!w)continue;
   const a=(Number(w.rotation)||0)*Math.PI/180,dx=e.x-w.x,dy=e.y-w.y,along=dx*Math.cos(a)+dy*Math.sin(a),across=-dx*Math.sin(a)+dy*Math.cos(a);
