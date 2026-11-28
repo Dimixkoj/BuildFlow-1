@@ -32,7 +32,7 @@ test('IFC roundtrip preserves multiple storeys and interior wall connections as 
   {id:'multi-wall',type:'wall',x:10,y:0,z:0,length:6,width:.2,height:6,rotation:0,baseLevelId:'L0',topLevelId:'L2'}
  ],wallTopology:{schemaVersion:1,revision:1,joins:[],overrides:[],connections:[{id:'cross-1',wallId:'ground-wall',otherWallId:'first-wall',endpoint:'interior',kind:'vertical-trace',mode:'trace',point:{x:0,y:0},continuationWallId:'first-wall'}]}};
  const ifc=exportIFC(model);
- assert.equal((ifc.match(/IFCBUILDINGSTOREY\(/g)||[]).length,2);
+ assert.equal((ifc.match(/IFCBUILDINGSTOREY\(/g)||[]).length,3);
  assert.match(ifc,/IFCMATERIALLAYERSET/);
  const imported=importIFC(ifc);
  assert.equal(imported.levels.length,3);
