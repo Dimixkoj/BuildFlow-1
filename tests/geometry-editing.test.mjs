@@ -76,10 +76,10 @@ test('recomputes wall join cuts after move, rotate, resize and extend edits',()=
  end.rotation=8;
  const rotated=computeWallJoinGeometry(end,model.elements);
  assert.ok(rotated.endCut.every(Number.isFinite));
- end.rotation=0;end.length=4.4;
+ end.rotation=0;end.length=4.4;end.x=-2.2;
  const resized=computeWallJoinGeometry(end,model.elements);
  assert.ok(resized.endTrim>0);
- end.length=5;end.x=-2.3;
+ end.length=5;end.x=-2.5;
  const extended=computeWallJoinGeometry(end,model.elements);
  assert.ok(extended.endTrim>0);
 });
