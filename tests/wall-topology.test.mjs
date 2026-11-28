@@ -5,7 +5,7 @@ import {computeWallJoinGeometry,wallFootprint,wallMetrics,rebuildWallTopology,wa
 const wall=(id,x,y,length=4,rotation=0,width=.2)=>({id,type:'wall',x,y,z:0,length,width,height:3,rotation});
 
 test('persists deterministic corner relationships and stable revision',()=>{
- const a=wall('a',-1.8,0),b=wall('b',0,0,4,90),model={elements:[a,b]};
+ const a=wall('a',-2,0),b=wall('b',0,2,4,90),model={elements:[a,b]};
  const first=rebuildWallTopology(model),ids=first.joins.map(j=>j.id);
  assert.ok(first.joins.some(j=>j.wallId==='a'&&j.otherWallId==='b'&&j.kind==='corner'));
  const revision=first.revision;const second=rebuildWallTopology(model);
@@ -13,12 +13,12 @@ test('persists deterministic corner relationships and stable revision',()=>{
 });
 
 test('rebuilds persistent join relationships after wall move, rotation and extension',()=>{
- const host=wall('host',0,0,5,90),end=wall('end',-1.8,0,4,0),model={elements:[host,end]};
- const before=rebuildWallTopology(model),oldPoint=before.joins.find(j=>j.wallId==='end')?.point;
- end.x=-2.2;end.length=4.4;
- const resized=rebuildWallTopology(model),newPoint=resized.joins.find(j=>j.wallId==='end')?.point;
- assert.ok(resized.revision>before.revision);assert.ok(newPoint);assert.notDeepEqual(newPoint,oldPoint);
- end.rotation=5;const rotated=rebuildWallTopology(model);assert.ok(rotated.revision>resized.revision);
+ const host=wall('host',0,2,5,90),end=wall('end',-2,0,4,0),model={elements:[host,end]};
+ const before=rebuildWallTopology(model),oldTrim=before.joins.find(j=>j.wallId==='end')?.trim;
+ end.x=-1.9;
+ const resized=rebuildWallTopology(model),newTrim=resized.joins.find(j=>j.wallId==='end')?.trim;
+ assert.ok(resized.revision>before.revision);assert.ok(newTrim>oldTrim);end.x=-2;end.length=4.4;const extended=rebuildWallTopology(model);assert.ok(extended.revision>resized.revision);assert.ok(extended.joins.find(j=>j.wallId==='end').trim>newTrim);
+ end.rotation=5;const rotated=rebuildWallTopology(model);assert.ok(rotated.revision>extended.revision);
 });
 
 test('resolves T-junctions without cutting the through wall',()=>{
