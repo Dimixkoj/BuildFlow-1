@@ -48,3 +48,10 @@ test('rejects layer stacks that do not match the wall core width',()=>{
  const w=wall('bad',0,0,4,0,.3,{layers:[{kind:'core',thickness:.2}]});
  assert.throws(()=>resolveCompoundWallJoin(w,{endpoint:'end'}),/does not match wall width/);
 });
+
+test('manual join can create an explicit endpoint relationship within tolerance',()=>{
+ const model={elements:[wall('a',-2,0,4,0,.3),wall('b',0,2,4,90,.3)]};
+ setWallJoinOverride(model,{wallId:'a',otherWallId:'b',endpoint:'end',mode:'join'});
+ const clusters=resolveWallJunctionClusters(model);
+ assert.ok(clusters.some(c=>c.wallIds.includes('a')&&c.wallIds.includes('b')));
+});
