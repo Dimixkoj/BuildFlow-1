@@ -90,13 +90,13 @@ function sampleManualBoundary(boundary){
  }
  return points;
 }
-export function setManualRoomSpace(model,{id,label='Room',levelId=null,boundary=[],areaOverride=null}={}){
+export function setManualRoomSpace(model,{id,label='Room',levelId=null,boundary=[],areaOverride=null,wallIds=[],height=null}={}){
  if(!model||!Array.isArray(model.elements))throw new TypeError('A design model is required');
  const points=sampleManualBoundary(boundary);if(points.length<3)throw new Error('A room boundary needs at least three valid points or a closed arc/line sequence');
- const space={id:id||'room-space:'+crypto.randomUUID(),label,levelId,boundary:structuredClone(boundary),areaOverride:areaOverride!==null&&areaOverride!==undefined&&areaOverride!==''&&Number.isFinite(Number(areaOverride))?Number(areaOverride):null,source:'manual',verified:true};
+ const space={id:id||'room-space:'+crypto.randomUUID(),label,levelId,boundary:structuredClone(boundary),areaOverride:areaOverride!==null&&areaOverride!==undefined&&areaOverride!==''&&Number.isFinite(Number(areaOverride))?Number(areaOverride):null,wallIds:[...new Set(wallIds)],height:Number.isFinite(Number(height))&&Number(height)>0?Number(height):null,source:'manual',verified:true};
  model.roomSpaces=Array.isArray(model.roomSpaces)?model.roomSpaces:[];const i=model.roomSpaces.findIndex(x=>x.id===space.id);if(i>=0)model.roomSpaces[i]=space;else model.roomSpaces.push(space);return space;
 }
 export function deleteManualRoomSpace(model,id){if(!Array.isArray(model?.roomSpaces))return false;const n=model.roomSpaces.length;model.roomSpaces=model.roomSpaces.filter(x=>x.id!==id);return model.roomSpaces.length!==n}
 export function resolveManualRoomSpaces(model,levelId=null){
- return(model?.roomSpaces||[]).filter(s=>!levelId||!s.levelId||s.levelId===levelId).map(s=>{const boundary=sampleManualBoundary(s.boundary),area=Math.abs(signedArea(boundary));return{id:s.id,label:s.label,boundary,area:Number.isFinite(s.areaOverride)?s.areaOverride:area,perimeter:boundary.reduce((sum,p,i)=>sum+distance(p,boundary[(i+1)%boundary.length]),0),levelId:s.levelId,source:'manual',verified:true}}).filter(s=>s.boundary.length>=3);
+ return(model?.roomSpaces||[]).filter(s=>!levelId||!s.levelId||s.levelId===levelId).map(s=>{const boundary=sampleManualBoundary(s.boundary),area=Math.abs(signedArea(boundary));return{id:s.id,label:s.label,boundary,area:Number.isFinite(s.areaOverride)?s.areaOverride:area,perimeter:boundary.reduce((sum,p,i)=>sum+distance(p,boundary[(i+1)%boundary.length]),0),levelId:s.levelId,wallIds:s.wallIds||[],height:s.height||null,source:'manual',verified:true}}).filter(s=>s.boundary.length>=3);
 }
