@@ -44,7 +44,7 @@ export function traceWallsAcrossLevels(model,{planTolerance=.12,angleTolerance=3
 }
 export function levelWallGraph(model){
  const levels=normaliseBuildingLevels(model);
- return levels.map(level=>({levelId:level.id,name:level.name,elevation:level.elevation,walls:(model.elements||[]).filter(w=>w.type==='wall'&&wallVerticalSpan(w,model).baseLevelId===level.id).map(w=>w.id)}));
+ return levels.map(level=>({levelId:level.id,name:level.name,elevation:level.elevation,walls:(model.elements||[]).filter(w=>w.type==='wall'&&wallVerticalSpan(w,model).zMax>level.elevation+EPS&&wallVerticalSpan(w,model).zMin<level.elevation+level.height-EPS).map(w=>w.id)}));
 }
 
 export function wallJoinCandidates(wall,walls,model){
@@ -57,4 +57,12 @@ export function elementLevelId(element,model){
  if(element?.levelId)return element.levelId;
  const levels=normaliseBuildingLevels(model);if(!levels.length)return null;const z=Number(element?.z)||0;
  return levels.reduce((best,l)=>Math.abs(l.elevation-z)<Math.abs(best.elevation-z)?l:best,levels[0]).id;
+}
+
+export function elementOnLevel(element,model,levelId){
+ const level=normaliseBuildingLevels(model).find(l=>l.id===levelId);if(!level)return elementLevelId(element,model)===levelId;
+ let target=element;
+ if(element?.hostId){target=(model?.elements||[]).find(e=>e.id===element.hostId&&e.type==='wall')||element}
+ if(target?.type==='wall'){const span=wallVerticalSpan(target,model);return span.zMax>level.elevation+EPS&&span.zMin<level.elevation+level.height-EPS}
+ return elementLevelId(element,model)===levelId;
 }
