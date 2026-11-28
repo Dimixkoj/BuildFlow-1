@@ -23,7 +23,7 @@ test('IFC exchange preserves wall connection relationships, IDs, layers and host
 
 test('IFC roundtrip preserves multiple storeys and interior wall connections as BIM relationships',()=>{
  const model={id:'multi-storey',title:'Multi-storey test',units:'m',levels:[{id:'L0',name:'Ground Floor',elevation:0,height:3},{id:'L1',name:'First Floor',elevation:3,height:3}],elements:[
-  {id:'ground-wall',type:'wall',x:0,y:0,z:0,length:6,width:.2,height:3,rotation:0,baseLevelId:'L0'},
+  {id:'ground-wall',type:'wall',x:0,y:0,z:0,length:6,width:.2,height:3,rotation:0,baseLevelId:'L0',layers:[{id:'core',kind:'core',material:'Blockwork',thickness:.2}]},
   {id:'first-wall',type:'wall',x:0,y:0,z:3,length:6,width:.2,height:3,rotation:0,baseLevelId:'L1'}
  ],wallTopology:{schemaVersion:1,revision:1,joins:[],overrides:[],connections:[{id:'cross-1',wallId:'ground-wall',otherWallId:'first-wall',endpoint:'interior',kind:'vertical-trace',mode:'trace',point:{x:0,y:0},continuationWallId:'first-wall'}]}};
  const ifc=exportIFC(model);
