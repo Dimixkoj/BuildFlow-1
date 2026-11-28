@@ -24,3 +24,10 @@ test('rejects compound wall layers whose thickness does not match wall width',()
  assert.equal(r.valid,false);
  assert.ok(r.errors.some(x=>x.includes('layer thickness total must match wall width')));
 });
+
+test('rejects a wall whose top storey is not above its base storey',()=>{
+ const model={levels:[{id:'L0',elevation:0,height:3},{id:'L1',elevation:3,height:3}],elements:[{...wall,baseLevelId:'L1',topLevelId:'L0'}]};
+ const result=validateGeometry(model);
+ assert.equal(result.valid,false);
+ assert.ok(result.errors.some(x=>x.includes('top storey must be above the base storey')));
+});
