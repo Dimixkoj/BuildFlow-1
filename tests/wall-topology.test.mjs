@@ -67,3 +67,18 @@ test('higher-priority wall continues through a corner and lower-priority wall tr
  const b=computeWallJoinGeometry(secondary,[primary,secondary]);
  assert.equal(a.endTrim,0);assert.ok(b.startTrim>0);
 });
+
+test('manual unjoin suppresses the automatic footprint cut',()=>{
+ const host=wall('host',0,2,4,90),branch=wall('branch',-2,0,4,0);
+ const automatic=computeWallJoinGeometry(branch,[host,branch]);
+ const separated=computeWallJoinGeometry(branch,[host,branch],[{wallId:'branch',otherWallId:'host',endpoint:'end',mode:'unjoin'}]);
+ assert.ok(automatic.endTrim>0);
+ assert.equal(separated.endTrim,0);
+});
+test('manual join override can resolve a near endpoint beyond the automatic snap tolerance',()=>{
+ const host=wall('host',0,2,4,90),branch=wall('branch',-1.7,0,4,0);
+ const automatic=computeWallJoinGeometry(branch,[host,branch]);
+ const forced=computeWallJoinGeometry(branch,[host,branch],[{wallId:'branch',otherWallId:'host',endpoint:'end',mode:'join'}]);
+ assert.equal(automatic.endTrim,0);
+ assert.ok(forced.endTrim>0);
+});
