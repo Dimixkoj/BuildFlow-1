@@ -55,6 +55,34 @@ test('resolves a T-junction without shortening the through-wall',()=>{
  const host=computeWallJoinGeometry(through,[through,tee]);
  assert.equal(host.startTrim,0);assert.equal(host.endTrim,0);
 });
+test('creates angled miter cuts for acute and obtuse wall corners',()=>{
+ const host=wall('host',0,0,5,45),end=wall('end',-1.7,-1.7,4,0);
+ const acute=computeWallJoinGeometry(end,[host,end]);
+ assert.ok(acute.endCut[0]!==acute.endCut[1]);
+ assert.ok(acute.endTrim>0);
+ const obtuseHost=wall('obtuse',0,0,5,135),obtuseEnd=wall('obtuse-end',-1.7,1.7,4,0);
+ const obtuse=computeWallJoinGeometry(obtuseEnd,[obtuseHost,obtuseEnd]);
+ assert.ok(obtuse.endTrim>0);
+ assert.ok(obtuse.endCut.every(Number.isFinite));
+});
+test('recomputes wall join cuts after move, rotate, resize and extend edits',()=>{
+ const host=wall('host',0,0,5,90),end=wall('end',-2.1,0,4,0);
+ const model={elements:[host,end]};
+ const first=computeWallJoinGeometry(end,model.elements);
+ assert.ok(first.endTrim>0);
+ end.x=-1.6;
+ const moved=computeWallJoinGeometry(end,model.elements);
+ assert.notEqual(moved.endCut[0],first.endCut[0]);
+ end.rotation=8;
+ const rotated=computeWallJoinGeometry(end,model.elements);
+ assert.ok(rotated.endCut.every(Number.isFinite));
+ end.rotation=0;end.length=4.4;
+ const resized=computeWallJoinGeometry(end,model.elements);
+ assert.ok(resized.endTrim>0);
+ end.length=5;end.x=-2.6;
+ const extended=computeWallJoinGeometry(end,model.elements);
+ assert.ok(extended.endTrim>0);
+});
 test('does not alter parallel walls or an interior cross-junction',()=>{
  const a=wall('a',0,0,4,0),parallel=wall('b',0,.4,4,0),crossing=wall('c',0,0,4,90);
  const p=computeWallJoinGeometry(a,[a,parallel]);assert.equal(p.length,4);
