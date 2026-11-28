@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {snapGeometryPoint,transformSelection,rotateSelection,resizeElement,alignSelection,offsetElement,trimExtendElement,apply3DTransform,constrainHostedOpening,syncHostedOpeningsAfterWallTransform} from '../renderer/geometry-editing.mjs';
+import {snapGeometryPoint,transformSelection,rotateSelection,resizeElement,alignSelection,offsetElement,trimExtendElement,apply3DTransform,apply3DGroupTransform,constrainHostedOpening,syncHostedOpeningsAfterWallTransform} from '../renderer/geometry-editing.mjs';
 const wall=(id,x,y,length=4,rotation=0)=>({id,type:'wall',x,y,z:0,length,width:.2,height:3,rotation});
 test('snaps to grid and nearby geometry points',()=>{const p=snapGeometryPoint(1.01,.99,[wall('w',2,1)],.2,true,.2);assert.ok(Number.isFinite(p.x)&&Number.isFinite(p.y));assert.equal(snapGeometryPoint(1.01,.99,[],.2,false).x,1.01)});
 test('moves a selected wall and hosted opening together',()=>{const w=wall('w',0,0),d={id:'d',type:'door',hostId:'w',x:0,y:0};const m={elements:[w,d,wall('other',4,0)]};const r=transformSelection(m,['w'],1,2);assert.equal(r.ok,true);assert.equal(w.x,1);assert.equal(d.y,2)});
@@ -17,3 +17,17 @@ test('keeps a hosted opening centred on its wall after movement',()=>{const w=wa
 test('clamps hosted openings within wall end limits',()=>{const w=wall('host',0,0,4,0);const d={id:'door',type:'door',hostId:'host',x:9,y:0,z:0,length:1,width:.08,height:2,rotation:0};const m={elements:[w,d]};constrainHostedOpening(m,'door');assert.equal(d.x,1.5)});
 
 test('moves hosted openings with a transformed wall in 3D',()=>{const oldWall=wall('host',0,0,4,0),oldDoor={id:'door',type:'door',hostId:'host',x:1,y:0,z:0,length:1,width:.08,height:2,rotation:0};const baseline={elements:[{...oldWall},{...oldDoor}]};const model={elements:[{...oldWall,x:2,y:3,rotation:90},{...oldDoor}]};const r=syncHostedOpeningsAfterWallTransform(model,'host',baseline);assert.equal(r.ok,true);assert.ok(Math.abs(model.elements[1].x-2)<1e-8);assert.ok(Math.abs(model.elements[1].y-4)<1e-8);assert.equal(model.elements[1].rotation,90)});
+
+test('applies a 3D group translation and rotation around its shared pivot',()=>{
+ const a=wall('a',0,0),b=wall('b',2,0),baseline={elements:[{...a},{...b}]},model={elements:[{...a},{...b}]};
+ const r=apply3DGroupTransform(model,['a','b'],{position:{x:5,y:0,z:2},rotation:{y:Math.PI/2},scale:{x:1,y:1,z:1}},baseline,{x:1,y:0,z:0});
+ assert.equal(r.ok,true);assert.equal(r.changed,2);
+ assert.ok(Math.abs(model.elements[0].x-6)<1e-8);assert.ok(Math.abs(model.elements[0].y-2)<1e-8);
+ assert.ok(Math.abs(model.elements[1].x-6)<1e-8);assert.ok(Math.abs(model.elements[1].y)<1e-8);
+ assert.equal(model.elements[0].rotation,-90);
+});
+test('scales selected group members in all three parametric dimensions',()=>{
+ const a=wall('a',0,0),baseline={elements:[{...a}]},model={elements:[{...a}]};
+ const r=apply3DGroupTransform(model,['a'],{position:{x:0,y:0,z:0},rotation:{y:0},scale:{x:2,y:3,z:.5}},baseline,{x:0,y:0,z:0});
+ assert.equal(r.ok,true);assert.equal(model.elements[0].length,8);assert.equal(model.elements[0].height,9);assert.equal(model.elements[0].width,.1);
+});
