@@ -46,7 +46,7 @@ export function resolveWallJunctionClusters(model,{tolerance=.08}={}){
  for(const override of topology.overrides||[]){
   if(!['join','override'].includes(override.mode))continue;
   const wall=walls.find(w=>w.id===override.wallId),other=walls.find(w=>w.id===override.otherWallId);
-  if(!wall||!other)continue;
+  if(!wall||!other||!wallsShareVerticalExtent(wall,other,model))continue;
   const s=override.endpoint==='start'?-wall.length/2:wall.length/2,p=point(wall,s),u=unit(other),dx=p.x-other.x,dy=p.y-other.y,along=dx*u.x+dy*u.y,across=Math.abs(-dx*u.y+dy*u.x);
   if(Math.abs(along)>other.length/2+other.width/2+tolerance||across>other.width/2+wall.width/2+tolerance)continue;
   if(records.some(r=>r.wallId===wall.id&&r.otherWallId===other.id&&r.endpoint===override.endpoint))continue;
