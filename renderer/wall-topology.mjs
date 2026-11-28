@@ -32,7 +32,7 @@ function endpointHit(wall,other,sign,tolerance=.18){
   return (sideB*other.width/2-dot(start,B.n))/denominator;
  });
  const inwardTrims=sideCuts.map(s=>sign<0?s+halfA:halfA-s);
- if(inwardTrims.some(t=>t<=1e-5||t>Math.max(wall.width,other.width)*3+.1))return null;
+ if(inwardTrims.some(t=>t<-.015||t>Math.max(wall.width,other.width)*3+.1))return null;
  const intersection=point({...wall,x:Number(wall.x)||0,y:Number(wall.y)||0},A.u,alongA);
  const otherAtEnd=Math.abs(Math.abs(alongB)-halfB)<=other.width/2+tol;
  return{
