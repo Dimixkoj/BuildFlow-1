@@ -23,6 +23,7 @@ export function wallsShareVerticalExtent(a,b,model,tolerance=EPS){
 export function traceWallsAcrossLevels(model,{planTolerance=.12,angleTolerance=3,layerTolerance=.01}={}){
  const walls=(model?.elements||[]).filter(e=>e?.type==='wall'),levels=normaliseBuildingLevels(model),traces=[];
  const layerSignature=w=>(w.layers||[]).map(l=>[l.id||'',l.kind||'',l.material||'',Number(l.thickness)||0,l.joinBehaviour||'miter',l.wrapAtJunction!==false,l.priority||0].join(':')).join('|');
+ for(const wall of walls){const span=wallVerticalSpan(wall,model),occupied=levels.filter(l=>span.zMax>l.elevation+EPS&&span.zMin<l.elevation+l.height-EPS);if(occupied.length>1)traces.push({id:'wall-span:'+wall.id,lowerWallId:wall.id,upperWallId:wall.id,lowerLevelId:occupied[0].id,upperLevelId:occupied[occupied.length-1].id,occupiedLevelIds:occupied.map(l=>l.id),planOffset:0,angleDifference:0,overlapLength:wall.length,point:{x:wall.x,y:wall.y},verticalGap:0,continuity:'continuous-single-wall',layerContinuity:'single-wall-stack',layerChanges:[],source:'multi-storey-wall-span'})}
  for(let i=0;i<walls.length;i++)for(let j=i+1;j<walls.length;j++){
   const a=walls[i],b=walls[j],A=wallVerticalSpan(a,model),B=wallVerticalSpan(b,model);
   if(Math.abs(A.baseElevation-B.baseElevation)<EPS&&A.baseLevelId===B.baseLevelId)continue;
