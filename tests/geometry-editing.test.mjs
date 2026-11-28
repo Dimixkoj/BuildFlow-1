@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {snapGeometryPoint,transformSelection,rotateSelection,resizeElement,alignSelection,offsetElement,trimExtendElement,apply3DTransform,apply3DGroupTransform,attachOpeningToWall,constrainHostedOpening,syncHostedOpeningsAfterWallTransform} from '../renderer/geometry-editing.mjs';
+import {computeWallJoinGeometry,snapGeometryPoint,transformSelection,rotateSelection,resizeElement,alignSelection,offsetElement,trimExtendElement,apply3DTransform,apply3DGroupTransform,attachOpeningToWall,constrainHostedOpening,syncHostedOpeningsAfterWallTransform} from '../renderer/geometry-editing.mjs';
 const wall=(id,x,y,length=4,rotation=0)=>({id,type:'wall',x,y,z:0,length,width:.2,height:3,rotation});
 test('snaps to grid and nearby geometry points',()=>{const p=snapGeometryPoint(1.01,.99,[wall('w',2,1)],.2,true,.2);assert.ok(Number.isFinite(p.x)&&Number.isFinite(p.y));assert.equal(snapGeometryPoint(1.01,.99,[],.2,false).x,1.01)});
 test('moves a selected wall and hosted opening together',()=>{const w=wall('w',0,0),d={id:'d',type:'door',hostId:'w',x:0,y:0};const m={elements:[w,d,wall('other',4,0)]};const r=transformSelection(m,['w'],1,2);assert.equal(r.ok,true);assert.equal(w.x,1);assert.equal(d.y,2)});
@@ -41,4 +41,22 @@ test('attaches an opening to a wall centreline and clamps it inside the wall',()
 test('rejects an opening that cannot fit its selected host wall',()=>{
  const w=wall('short',0,0,1),d={id:'window',type:'window',x:0,y:0,z:0,length:1.2,width:.08,height:1,rotation:0},model={elements:[w,d]};
  const r=attachOpeningToWall(model,'window','short');assert.equal(r.ok,false);assert.match(r.reason,/larger than its host wall/);
+});
+test('resolves an L-corner by trimming the terminating wall to the host face',()=>{
+ const host=wall('host',0,0,4,90),end=wall('end',-2.1,0,4,0);
+ const r=computeWallJoinGeometry(end,[host,end]);
+ assert.ok(Math.abs(r.startTrim-.1)<1e-8);assert.equal(r.endTrim,0);
+ assert.ok(Math.abs(r.length-3.9)<1e-8);
+});
+test('resolves a T-junction without shortening the through-wall',()=>{
+ const through=wall('through',0,0,6,0),tee=wall('tee',0,1.1,2,90);
+ const r=computeWallJoinGeometry(tee,[through,tee]);
+ assert.ok(Math.abs(r.startTrim-.1)<1e-8);assert.ok(Math.abs(r.endTrim-.1)<1e-8);
+ const host=computeWallJoinGeometry(through,[through,tee]);
+ assert.equal(host.startTrim,0);assert.equal(host.endTrim,0);
+});
+test('does not alter parallel walls or an interior cross-junction',()=>{
+ const a=wall('a',0,0,4,0),parallel=wall('b',0,.4,4,0),crossing=wall('c',0,0,4,90);
+ const p=computeWallJoinGeometry(a,[a,parallel]);assert.equal(p.length,4);
+ const x=computeWallJoinGeometry(a,[a,crossing]);assert.equal(x.length,4);
 });
