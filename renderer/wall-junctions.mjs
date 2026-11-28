@@ -1,3 +1,4 @@
+import { wallsShareVerticalExtent } from './wall-levels.mjs';
 import { computeWallJoinGeometry, rebuildWallTopology } from './wall-topology.mjs';
 
 const rad=d=>(Number(d)||0)*Math.PI/180;
@@ -34,7 +35,7 @@ export function resolveWallJunctionClusters(model,{tolerance=.08}={}){
  const topology=rebuildWallTopology(model),walls=model.elements.filter(e=>e?.type==='wall');
  const records=(topology.joins||[]).map(j=>({...j,wall:walls.find(w=>w.id===j.wallId),other:walls.find(w=>w.id===j.otherWallId)})).filter(j=>j.wall&&j.other&&!topology.overrides?.some(o=>o.mode==='unjoin'&&((o.wallId===j.wallId&&o.otherWallId===j.otherWallId&&o.endpoint===j.endpoint)||(o.wallId===j.otherWallId&&o.otherWallId===j.wallId))));
  for(let i=0;i<walls.length;i++)for(let j=i+1;j<walls.length;j++){
-  const a=walls[i],b=walls[j],hit=centrelineIntersection(a,b);if(!hit)continue;
+  const a=walls[i],b=walls[j];if(!wallsShareVerticalExtent(a,b,model))continue;const hit=centrelineIntersection(a,b);if(!hit)continue;
   if(topology.overrides?.some(o=>o.mode==='unjoin'&&((o.wallId===a.id&&o.otherWallId===b.id)||(o.wallId===b.id&&o.otherWallId===a.id))))continue;
   const exists=records.some(r=>((r.wallId===a.id&&r.otherWallId===b.id)||(r.wallId===b.id&&r.otherWallId===a.id))&&distance(r.point,hit.point)<=tolerance);
   if(exists)continue;
