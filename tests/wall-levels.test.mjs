@@ -15,3 +15,12 @@ test('does not create same-plan junctions between vertically separated storey wa
  assert.equal(rebuildWallTopology(model).joins.length,0);
  assert.equal(resolveWallJunctionClusters(model).length,0);
 });
+
+test('reports finish wrap and join behaviour changes between storeys',()=>{
+ const a=[{id:'core',kind:'core',material:'Block',thickness:.2,joinBehaviour:'miter',wrapAtJunction:false}];
+ const b=[{id:'core',kind:'core',material:'Block',thickness:.2,joinBehaviour:'butt',wrapAtJunction:true}];
+ const model={levels,elements:[wall('before','L0',{layers:a}),wall('after','L1',{layers:b})]};
+ const trace=traceWallsAcrossLevels(model)[0];
+ assert.equal(trace.layerContinuity,'changed');
+ assert.ok(trace.layerChanges.some(x=>x.key==='core'&&x.from.joinBehaviour==='miter'&&x.to.joinBehaviour==='butt'));
+});
