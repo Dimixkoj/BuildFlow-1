@@ -148,31 +148,47 @@ export function attachOpeningToWall(model,openingId,wallId=null){
 }
 
 /**
- * Resolve butt-end wall joins in plan geometry. Each wall keeps its own
- * parametric centreline; only its rendered end faces are shortened to the
- * face of a perpendicular/intersecting host wall. Interior crossings remain
- * untouched so T and cross junctions do not shorten the through-wall.
+ * Resolve wall end cuts against neighbouring wall faces.
+ * Each endpoint is solved independently in the wall's local coordinate system.
+ * The two side intersections form a true miter line, including acute/obtuse
+ * corners. Results are derived from the live model on every render.
  */
 export function computeWallJoinGeometry(wall,walls=[]){
- const a=rad(wall.rotation||0),u={x:Math.cos(a),y:Math.sin(a)};
- const half=Math.max(.001,(wall.length||0)/2),thickness=Math.max(.01,wall.width||.15);
- let startTrim=0,endTrim=0;
- for(const other of walls){
-  if(!other||other.id===wall.id||other.type!=='wall'||!(other.length>0))continue;
-  const b=rad(other.rotation||0),v={x:Math.cos(b),y:Math.sin(b)};
-  const sine=Math.abs(cross(u,v));
-  if(sine<1e-5)continue;
+ const a=rad(wall.rotation||0),u={x:Math.cos(a),y:Math.sin(a)},n={x:-u.y,y:u.x};
+ const half=Math.max(.001,(wall.length||0)/2),width=Math.max(.01,wall.width||.15);
+ const cuts={start:[-half,-half],end:[half,half]},joins=[];
+ const solve=(other,sign)=>{
+  if(!other||other.id===wall.id||other.type!=='wall'||!(other.length>0))return null;
+  const b=rad(other.rotation||0),v={x:Math.cos(b),y:Math.sin(b)},normal={x:-v.y,y:v.x};
+  const denominator=u.x*normal.x+u.y*normal.y;
+  if(Math.abs(denominator)<1e-6)return null;
   const q={x:other.x-wall.x,y:other.y-wall.y};
-  const along=cross(q,v)/cross(u,v);
-  const across=cross(q,u)/cross(u,v);
-  if(Math.abs(across)>other.length/2+thickness/2)continue;
-  const endpointDistance=half-Math.abs(along);
-  if(endpointDistance>Math.max(thickness,other.width||.15)*1.5)continue;
-  const trim=Math.min(half*.45,Math.max(0,(other.width||.15)/2/sine));
-  if(along<0)startTrim=Math.max(startTrim,trim);
-  else endTrim=Math.max(endTrim,trim);
+  const determinant=u.x*v.y-u.y*v.x;
+  if(Math.abs(determinant)<1e-6)return null;
+  const along=(q.x*v.y-q.y*v.x)/determinant;
+  const across=(q.x*u.y-q.y*u.x)/determinant;
+  if(Math.abs(across)>other.length/2+width)return null;
+  if(Math.abs(sign*half-along)>Math.max(width,other.width||.15)*2.25)return null;
+  const endpoint={x:wall.x+u.x*sign*half,y:wall.y+u.y*sign*half};
+  const sideOfHost=Math.sign((endpoint.x-other.x)*normal.x+(endpoint.y-other.y)*normal.y)||1;
+  const face=sideOfHost*(other.width||.15)/2;
+  const sideCuts=[-width/2,width/2].map(side=>{
+   const point={x:wall.x+u.x*sign*half+n.x*side,y:wall.y+u.y*sign*half+n.y*side};
+   const distance=(point.x-other.x)*normal.x+(point.y-other.y)*normal.y;
+   return sign*half+(face-distance)/denominator;
+  });
+  const trim=sideCuts.reduce((sum,x)=>sum+(sign<0?x+half:half-x),0)/2;
+  if(trim<=1e-5||trim>half*.8)return null;
+  return{otherId:other.id,sideCuts,trim,angle:Math.acos(Math.min(1,Math.max(-1,Math.abs(u.x*v.x+u.y*v.y))))*180/Math.PI};
+ };
+ for(const other of walls){
+  for(const [name,sign] of [['start',-1],['end',1]]){
+   const hit=solve(other,sign);if(!hit)continue;
+   for(let i=0;i<2;i++)cuts[name][i]=sign<0?Math.max(cuts[name][i],hit.sideCuts[i]):Math.min(cuts[name][i],hit.sideCuts[i]);
+   joins.push({wallId:other.id,endpoint:name,angle:hit.angle,trim:hit.trim});
+  }
  }
- const length=Math.max(.02,(wall.length||0)-startTrim-endTrim);
- const centreOffset=(startTrim-endTrim)/2;
- return{startTrim,endTrim,length,centreOffset,center:{x:wall.x+u.x*centreOffset,y:wall.y+u.y*centreOffset}};
+ const startTrim=Math.max(0,(cuts.start[0]+cuts.start[1])/2+half);
+ const endTrim=Math.max(0,half-(cuts.end[0]+cuts.end[1])/2);
+ return{startTrim,endTrim,length:Math.max(.02,(cuts.end[0]+cuts.end[1]-cuts.start[0]-cuts.start[1])/2),centreOffset:(startTrim-endTrim)/2,startCut:cuts.start,endCut:cuts.end,joins};
 }
