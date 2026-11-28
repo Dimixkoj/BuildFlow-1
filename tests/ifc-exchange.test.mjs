@@ -26,17 +26,20 @@ test('IFC exchange preserves wall connection relationships, IDs, layers and host
 });
 
 test('IFC roundtrip preserves multiple storeys and interior wall connections as BIM relationships',()=>{
- const model={id:'multi-storey',title:'Multi-storey test',units:'m',levels:[{id:'L0',name:'Ground Floor',elevation:0,height:3},{id:'L1',name:'First Floor',elevation:3,height:3}],elements:[
+ const model={id:'multi-storey',title:'Multi-storey test',units:'m',levels:[{id:'L0',name:'Ground Floor',elevation:0,height:3},{id:'L1',name:'First Floor',elevation:3,height:3},{id:'L2',name:'Second Floor',elevation:6,height:3}],elements:[
   {id:'ground-wall',type:'wall',x:0,y:0,z:0,length:6,width:.2,height:3,rotation:0,baseLevelId:'L0',layers:[{id:'core',kind:'core',material:'Blockwork',thickness:.2}]},
-  {id:'first-wall',type:'wall',x:0,y:0,z:3,length:6,width:.2,height:3,rotation:0,baseLevelId:'L1'}
+  {id:'first-wall',type:'wall',x:0,y:0,z:3,length:6,width:.2,height:3,rotation:0,baseLevelId:'L1'},
+  {id:'multi-wall',type:'wall',x:10,y:0,z:0,length:6,width:.2,height:6,rotation:0,baseLevelId:'L0',topLevelId:'L2'}
  ],wallTopology:{schemaVersion:1,revision:1,joins:[],overrides:[],connections:[{id:'cross-1',wallId:'ground-wall',otherWallId:'first-wall',endpoint:'interior',kind:'vertical-trace',mode:'trace',point:{x:0,y:0},continuationWallId:'first-wall'}]}};
  const ifc=exportIFC(model);
  assert.equal((ifc.match(/IFCBUILDINGSTOREY\(/g)||[]).length,2);
  assert.match(ifc,/IFCMATERIALLAYERSET/);
  const imported=importIFC(ifc);
- assert.equal(imported.levels.length,2);
+ assert.equal(imported.levels.length,3);
  assert.equal(imported.elements.find(e=>e.id==='ground-wall').baseLevelId,'ifc-level:'+((ifc.match(/#(\d+)=IFCBUILDINGSTOREY/)||[])[1]));
  assert.ok(imported.wallTopology.connections.some(x=>x.endpoint==='interior'&&x.kind==='vertical-trace'));
+ assert.ok(ifc.includes('IFCRELREFERENCEDINSPATIALSTRUCTURE('));
+ assert.ok(imported.elements.find(e=>e.id==='multi-wall').referenceLevelIds.includes(imported.levels[1].id));
 });
 
 test('IFC roundtrip exports room spaces with storey and wall-boundary relationships',()=>{
