@@ -3,6 +3,8 @@ const finite=v=>typeof v==='number'&&Number.isFinite(v),EPS=1e-6;
 export function validateGeometry(model){
  const errors=[],warnings=[],items=Array.isArray(model?.elements)?model.elements:[];
  if(!model||!Array.isArray(model.elements))errors.push('Model elements collection is missing');
+ const levels=Array.isArray(model?.levels)?model.levels:[],levelIds=new Set();
+ for(const level of levels){if(!level?.id||levelIds.has(level.id))errors.push('Building level: missing or duplicate stable ID');else levelIds.add(level.id);if(!Number.isFinite(Number(level.elevation)))errors.push('Building level '+String(level.id||'')+': elevation must be finite');if(!Number.isFinite(Number(level.height))||Number(level.height)<=EPS)errors.push('Building level '+String(level.id||'')+': height must be positive and finite')}
  const ids=new Set();
  for(let i=0;i<items.length;i++){
   const e=items[i],tag=e?.label||e?.type||'Object '+(i+1);
@@ -13,6 +15,12 @@ export function validateGeometry(model){
   for(const k of ['x','y','z','length','width','height','rotation'])if(!finite(e[k]))errors.push(tag+': '+k+' must be a finite number');
   for(const k of ['length','width','height'])if(finite(e[k])&&e[k]<=EPS)errors.push(tag+': '+k+' must be greater than zero');
   if(finite(e.rotation)&&Math.abs(e.rotation)>36000)errors.push(tag+': rotation is outside the supported range');
+  if(e.type==='wall'){
+   const baseId=e.baseLevelId||e.levelId,base=levels.find(l=>l.id===baseId),top=levels.find(l=>l.id===e.topLevelId);
+   if(baseId&&!base)errors.push(tag+': base storey reference does not exist');
+   if(e.topLevelId&&!top)errors.push(tag+': top storey reference does not exist');
+   if(base&&top&&Number(top.elevation)<=Number(base.elevation)+EPS)errors.push(tag+': top storey must be above the base storey');
+  }
   if(e.type==='wall'&&Array.isArray(e.layers)&&e.layers.length){
    const layerThickness=e.layers.map(layer=>Number(layer?.thickness));
    if(layerThickness.some(v=>!Number.isFinite(v)||v<=EPS))errors.push(tag+': compound wall layers require positive finite thicknesses');
