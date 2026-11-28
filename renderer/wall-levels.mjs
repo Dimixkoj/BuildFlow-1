@@ -46,3 +46,7 @@ export function levelWallGraph(model){
  const levels=normaliseBuildingLevels(model);
  return levels.map(level=>({levelId:level.id,name:level.name,elevation:level.elevation,walls:(model.elements||[]).filter(w=>w.type==='wall'&&wallVerticalSpan(w,model).baseLevelId===level.id).map(w=>w.id)}));
 }
+
+export function wallJoinCandidates(wall,walls,model){
+ return(walls||[]).filter(other=>other.id===wall.id||wallsShareVerticalExtent(wall,other,model));
+}
