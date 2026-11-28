@@ -48,3 +48,13 @@ test('landscape includes area and topsoil allowance',()=>{
  assert.equal(line(rows,'land_area').qty,12);
  assert.ok(Math.abs(line(rows,'land_topsoil').qty-1.8)<1e-9);
 });
+
+test('wall takeoff follows topology-adjusted junction geometry and hosted openings',()=>{
+ const through={id:'through',type:'wall',x:0,y:0,z:0,length:8,width:.2,height:3,rotation:0};
+ const tee={id:'tee',type:'wall',x:0,y:1,z:0,length:2,width:.2,height:3,rotation:90};
+ const door={id:'door',type:'door',hostId:'tee',length:.8,height:2};
+ const rows=quantityLinesFor(tee,[through,tee,door]);
+ assert.ok(line(rows,'wall_area').qty<2*3-.8*2);
+ assert.ok(line(rows,'wall_volume').qty<2*.2*3-.8*2*.2);
+ assert.ok(line(rows,'wall_volume').qty>0);
+});
