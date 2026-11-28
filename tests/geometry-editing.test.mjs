@@ -51,7 +51,7 @@ test('resolves an L-corner by trimming the terminating wall to the host face',()
 test('resolves a T-junction without shortening the through-wall',()=>{
  const through=wall('through',0,0,6,0),tee=wall('tee',0,1.1,2,90);
  const r=computeWallJoinGeometry(tee,[through,tee]);
- assert.ok(Math.abs(r.startTrim-.1)<1e-8);assert.ok(Math.abs(r.endTrim-.1)<1e-8);
+ assert.ok(Math.abs(r.startTrim-.1)<1e-8);assert.equal(r.endTrim,0);
  const host=computeWallJoinGeometry(through,[through,tee]);
  assert.equal(host.startTrim,0);assert.equal(host.endTrim,0);
 });
