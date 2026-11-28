@@ -40,6 +40,7 @@ test('IFC roundtrip preserves multiple storeys and interior wall connections as 
  assert.ok(imported.wallTopology.connections.some(x=>x.endpoint==='interior'&&x.kind==='vertical-trace'));
  assert.ok(ifc.includes('IFCRELREFERENCEDINSPATIALSTRUCTURE('));
  assert.ok(imported.elements.find(e=>e.id==='multi-wall').referenceLevelIds.includes(imported.levels[1].id));
+ assert.equal(imported.elements.find(e=>e.id==='multi-wall').topLevelId,'L2');
 });
 
 test('IFC roundtrip exports room spaces with storey and wall-boundary relationships',()=>{
