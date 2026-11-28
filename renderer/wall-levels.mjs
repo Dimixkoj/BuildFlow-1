@@ -62,8 +62,8 @@ export function elementLevelId(element,model){
 
 export function elementOnLevel(element,model,levelId){
  const level=normaliseBuildingLevels(model).find(l=>l.id===levelId);if(!level)return elementLevelId(element,model)===levelId;
- let target=element;
- if(element?.hostId){target=(model?.elements||[]).find(e=>e.id===element.hostId&&e.type==='wall')||element}
+ if(['door','window'].includes(element?.type)){const z0=Number(element.z)||0,z1=z0+(Number(element.height)||0);return z1>level.elevation+EPS&&z0<level.elevation+level.height-EPS}
+ let target=element;if(element?.hostId)target=(model?.elements||[]).find(e=>e.id===element.hostId&&e.type==='wall')||element;
  if(target?.type==='wall'){const span=wallVerticalSpan(target,model);return span.zMax>level.elevation+EPS&&span.zMin<level.elevation+level.height-EPS}
  return elementLevelId(element,model)===levelId;
 }
