@@ -14,7 +14,7 @@ test('IFC exchange preserves wall connection relationships, IDs, layers and host
  assert.match(ifc,/IFCRELCONNECTSELEMENTS/);
  assert.match(ifc,/IFCRELVOIDSELEMENT/);
  assert.match(ifc,/IFCRELFILLSELEMENT/);
- const openingLine=ifc.split('\\n').find(line=>line.includes('=IFCOPENINGELEMENT(')),voidLine=ifc.split('\\n').find(line=>line.includes('=IFCRELVOIDSELEMENT(')),fillLine=ifc.split('\\n').find(line=>line.includes('=IFCRELFILLSELEMENT('));
+ const openingLine=ifc.split(String.fromCharCode(10)).find(line=>line.includes('=IFCOPENINGELEMENT(')),voidLine=ifc.split(String.fromCharCode(10)).find(line=>line.includes('=IFCRELVOIDSELEMENT(')),fillLine=ifc.split(String.fromCharCode(10)).find(line=>line.includes('=IFCRELFILLSELEMENT('));
  const openingRef=openingLine?.slice(0,openingLine.indexOf('=')),voidArgs=voidLine?.slice(voidLine.indexOf('(')+1,voidLine.lastIndexOf(')')),fillArgs=fillLine?.slice(fillLine.indexOf('(')+1,fillLine.lastIndexOf(')'));
  assert.ok(openingRef&&voidArgs?.endsWith(','+openingRef+')'),'void relationship must reference a separate IFC opening element');
  assert.ok(fillArgs?.includes(openingRef+','),'fill relationship must link the opening to its door/window');
