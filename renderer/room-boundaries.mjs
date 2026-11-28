@@ -44,7 +44,7 @@ export function resolveRoomBoundaries(model,{minimumArea=.25,tolerance=.015}={})
  const nodes=new Map(),edges=[],adj=new Map();
  const nodeId=p=>{const k=keyPoint(p);if(!nodes.has(k))nodes.set(k,{id:k,point:p});return k};
  for(let i=0;i<segments.length;i++){
-  const s=segments[i],unique=cuts[i].sort((a,b)=>a.t-b.t).filter((v,k,a)=>k===0||Math.abs(v.t-a[k-1].t)>tolerance);
+  const s=segments[i],unique=cuts[i].sort((a,b)=>a.t-b.t).filter((v,k,a)=>k===0||distance(v.point,a[k-1].point)>tolerance);
   for(let j=0;j<unique.length-1;j++){
    const a=nodeId(unique[j].point),b=nodeId(unique[j+1].point);if(a===b)continue;
    const id=edges.length;edges.push({id,a,b,wallId:s.wall.id,width:s.wall.width});
