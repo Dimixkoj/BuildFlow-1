@@ -13,7 +13,7 @@ test('persists deterministic corner relationships and stable revision',()=>{
 });
 
 test('rebuilds persistent join relationships after wall move, rotation and extension',()=>{
- const host=wall('host',0,2,5,90),end=wall('end',-2,0,4,0),model={elements:[host,end]};
+ const host=wall('host',0,2,4,90),end=wall('end',-2,0,4,0),model={elements:[host,end]};
  const before=rebuildWallTopology(model),oldTrim=before.joins.find(j=>j.wallId==='end')?.trim;
  end.x=-1.9;
  const resized=rebuildWallTopology(model),newTrim=resized.joins.find(j=>j.wallId==='end')?.trim;
