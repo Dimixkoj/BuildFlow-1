@@ -55,3 +55,18 @@ test('manual join can create an explicit endpoint relationship within tolerance'
  const clusters=resolveWallJunctionClusters(model);
  assert.ok(clusters.some(c=>c.wallIds.includes('a')&&c.wallIds.includes('b')));
 });
+
+test('groups four through-wall intersections into one multiway junction',()=>{
+ const model={elements:[
+  wall('east-west',0,0,8,0,.2),
+  wall('north-south',0,0,8,90,.2),
+  wall('diagonal-a',0,0,8,45,.2),
+  wall('diagonal-b',0,0,8,135,.2)
+ ]};
+ const clusters=resolveWallJunctionClusters(model);
+ const node=clusters.find(x=>x.wallIds.length===4);
+ assert.ok(node,'expected one four-wall intersection cluster');
+ assert.equal(node.kind,'multiway');
+ assert.equal(node.wallIds.length,4);
+ assert.ok(node.members.every(m=>m.endpoint==='interior'));
+});
